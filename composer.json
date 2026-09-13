@@ -1,0 +1,101 @@
+{
+    "name": "randulfthegrey/seat-buyback-programs",
+    "description": "Community SeAT 5 plugin for configurable, compression-aware buyback programs",
+    "type": "seat-plugin",
+    "license": "MIT",
+    "homepage": "https://github.com/randulfTheGrey/seat-buyback-programs",
+    "authors": [
+        {
+            "name": "RandulfTheGrey"
+        }
+    ],
+    "keywords": [
+        "buyback",
+        "eve",
+        "eve-online",
+        "seat",
+        "seat-plugin"
+    ],
+    "support": {
+        "docs": "https://github.com/randulfTheGrey/seat-buyback-programs/tree/main/docs",
+        "source": "https://github.com/randulfTheGrey/seat-buyback-programs"
+    },
+    "require": {
+        "brick/math": "^0.12.3",
+        "ext-json": "*",
+        "ext-zip": "*",
+        "php": "^8.2",
+        "eveseat/eveapi": "^5.0.34",
+        "eveseat/services": "^5.1",
+        "eveseat/web": "^5.0.35",
+        "laravel/framework": "^10.48.29",
+        "recursivetree/seat-prices-core": "^1.0.1"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0",
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "RandulfTheGrey\\Seat\\BuybackPrograms\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "RandulfTheGrey\\Seat\\BuybackPrograms\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "check": [
+            "@validate:release",
+            "@lint",
+            "@test"
+        ],
+        "lint": "bash scripts/lint-php.sh",
+        "validate:release": "bash scripts/release-checks.sh",
+        "test": "phpunit"
+    },
+    "archive": {
+        "exclude": [
+            "/.composer-cache/",
+            "/.git/",
+            "/.gitlab-ci.yml",
+            "/.phpunit.cache/",
+            "/AGENTS.md",
+            "/build/",
+            "/composer.lock",
+            "/Dockerfile.validation",
+            "/vendor/"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "RandulfTheGrey\\Seat\\BuybackPrograms\\BuybackProgramsServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "policy": {
+            "advisories": {
+                "block": true,
+                "audit": "fail",
+                "ignore-id": {
+                    "PKSA-m5cs-t1y6-qpcs": {
+                        "on-audit": false,
+                        "reason": "SeAT 5 requires Laravel 10; this package does not use local temporary signed URLs. See ADR 0013."
+                    },
+                    "PKSA-3r5d-mb8f-1qw9": {
+                        "on-audit": false,
+                        "reason": "SeAT 5 requires Laravel 10; CR and LF are prohibited in package-owned email inputs. See ADR 0013."
+                    },
+                    "PKSA-mdq4-51ck-6kdq": {
+                        "on-audit": false,
+                        "reason": "Duplicate CVE record for PKSA-3r5d-mb8f-1qw9; retained in audits. See ADR 0013."
+                    }
+                }
+            }
+        },
+        "sort-packages": true
+    }
+}
