@@ -9,7 +9,29 @@ follow [Semantic Versioning](https://semver.org/).
 No unreleased changes are currently scheduled beyond release-candidate
 validation.
 
-## [1.0.0-rc.1] - Unreleased
+## [1.0.0-rc.3] - 2026-09-18
+
+### Fixed
+
+- Allow corrective and non-worsening Program and rule edits when previously
+  persisted policy paths already exceed the effective modifier bounds, while
+  still rejecting newly introduced or worsened violations.
+- Distinguish valid TYPE `REPLACE` rules at the exact `-100%` and `+100%`
+  boundaries from TYPE `ADJUST` compositions that exceed those bounds.
+- Report structured, deduplicated effective-policy diagnostics once in the
+  administration UI, including the affected path and percentage values.
+
+## [1.0.0-rc.2] - 2026-09-18
+
+### Fixed
+
+- Resolve pasted appraisal item names using case-insensitive exact matching
+  while preserving canonical EVE type identity and non-fuzzy behavior.
+- Reject composed effective policy modifiers outside the supported `-100%`
+  through `+100%` domain, including invalid combinations saved while a Program
+  is disabled.
+
+## [1.0.0-rc.1] - 2026-09-13
 
 ### Added
 
@@ -45,5 +67,7 @@ validation.
   reviewed compatibility/security policy is documented in ADR 0013.
 - Public contribution workflow remains deferred until after stable `1.0.0`.
 
-[Unreleased]: https://github.com/randulfTheGrey/seat-buyback-programs/compare/v1.0.0-rc.1...HEAD
+[Unreleased]: https://github.com/randulfTheGrey/seat-buyback-programs/compare/v1.0.0-rc.3...HEAD
+[1.0.0-rc.3]: https://github.com/randulfTheGrey/seat-buyback-programs/compare/v1.0.0-rc.2...v1.0.0-rc.3
+[1.0.0-rc.2]: https://github.com/randulfTheGrey/seat-buyback-programs/compare/v1.0.0-rc.1...v1.0.0-rc.2
 [1.0.0-rc.1]: https://github.com/randulfTheGrey/seat-buyback-programs/releases/tag/v1.0.0-rc.1

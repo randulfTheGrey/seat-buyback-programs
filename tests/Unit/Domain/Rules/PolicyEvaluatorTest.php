@@ -338,6 +338,146 @@ final class PolicyEvaluatorTest extends TestCase
         self::assertSame($expected, $result->effectiveModifierBps->value);
     }
 
+    /**
+     * @return iterable<string, array{int, int}>
+     */
+    public static function replacementRegressionProvider(): iterable
+    {
+        yield 'discount boundary ignores inherited discount' => [-1000, -10000];
+        yield 'premium boundary ignores inherited premium' => [1000, 10000];
+        yield 'replacement can cross from discount to premium' => [-9000, 9000];
+    }
+
+    #[DataProvider('replacementRegressionProvider')]
+    public function test_replace_uses_the_operand_instead_of_composing_with_the_inherited_modifier(
+        int $initial,
+        int $replacement,
+    ): void {
+        $result = $this->evaluator->evaluate(
+            $this->defaults(modifierBps: $initial),
+            $this->item(),
+            [$this->rule(
+                RuleTargetType::TYPE,
+                34,
+                modifierOperation: ModifierOperation::REPLACE,
+                modifierBps: $replacement,
+            )],
+        );
+
+        self::assertSame($replacement, $result->effectiveModifierBps->value);
+    }
+
+    /**
+     * @return iterable<string, array{int, int, int}>
+     */
+    public static function adjustmentRegressionProvider(): iterable
+    {
+        yield 'discount exact boundary' => [-1000, -9000, -10000];
+        yield 'premium exact boundary' => [1000, 9000, 10000];
+    }
+
+    #[DataProvider('adjustmentRegressionProvider')]
+    public function test_adjust_composes_with_the_inherited_modifier_at_exact_boundaries(
+        int $initial,
+        int $adjustment,
+        int $expected,
+    ): void {
+        $result = $this->evaluator->evaluate(
+            $this->defaults(modifierBps: $initial),
+            $this->item(),
+            [$this->rule(
+                RuleTargetType::TYPE,
+                34,
+                modifierOperation: ModifierOperation::ADJUST,
+                modifierBps: $adjustment,
+            )],
+        );
+
+        self::assertSame($expected, $result->effectiveModifierBps->value);
+    }
+
+    /**
+     * @return iterable<string, array{int, int, int}>
+     */
+    public static function adjustmentImmediateOverflowRegressionProvider(): iterable
+    {
+        yield 'one point below discount boundary' => [-1000, -9001, -10001];
+        yield 'one point above premium boundary' => [1000, 9001, 10001];
+    }
+
+    #[DataProvider('adjustmentImmediateOverflowRegressionProvider')]
+    public function test_adjust_fails_closed_immediately_outside_the_boundaries(
+        int $initial,
+        int $adjustment,
+        int $invalid,
+    ): void {
+        $this->expectException(InvalidEffectivePolicyException::class);
+        $this->expectExceptionMessage(sprintf('produced %d basis points', $invalid));
+
+        $this->evaluator->evaluate(
+            $this->defaults(modifierBps: $initial),
+            $this->item(),
+            [$this->rule(
+                RuleTargetType::TYPE,
+                34,
+                modifierOperation: ModifierOperation::ADJUST,
+                modifierBps: $adjustment,
+            )],
+        );
+    }
+
+    public function test_type_replacement_resets_prior_program_and_group_adjustments(): void
+    {
+        $result = $this->evaluator->evaluate(
+            $this->defaults(modifierBps: -1000),
+            $this->item(),
+            [
+                $this->rule(
+                    RuleTargetType::GROUP,
+                    18,
+                    modifierOperation: ModifierOperation::ADJUST,
+                    modifierBps: -2000,
+                ),
+                $this->rule(
+                    RuleTargetType::TYPE,
+                    34,
+                    modifierOperation: ModifierOperation::REPLACE,
+                    modifierBps: -5000,
+                ),
+            ],
+        );
+
+        self::assertSame(-5000, $result->effectiveModifierBps->value);
+        self::assertSame([-3000, -5000], array_map(
+            static fn ($layer): int => $layer->modifierAfterBps->value,
+            $result->layers,
+        ));
+    }
+
+    public function test_effective_policy_exception_exposes_the_structured_offending_operation(): void
+    {
+        try {
+            $this->evaluator->evaluate(
+                $this->defaults(modifierBps: -1000),
+                $this->item(),
+                [$this->rule(
+                    RuleTargetType::TYPE,
+                    34,
+                    modifierOperation: ModifierOperation::ADJUST,
+                    modifierBps: -10000,
+                    ruleId: 77,
+                )],
+            );
+            self::fail('Expected effective modifier composition to fail.');
+        } catch (InvalidEffectivePolicyException $exception) {
+            self::assertSame(ModifierOperation::ADJUST, $exception->violation->operation);
+            self::assertSame(-1000, $exception->violation->previousBps);
+            self::assertSame(-10000, $exception->violation->operandBps);
+            self::assertSame(-11000, $exception->violation->resultingBps);
+            self::assertSame(77, $exception->violation->ruleId);
+        }
+    }
+
     public function test_multiple_adjust_layers_accumulate_additive_percentage_points(): void
     {
         $result = $this->evaluator->evaluate(

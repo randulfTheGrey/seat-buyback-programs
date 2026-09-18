@@ -44,6 +44,9 @@ final class SaveRule
             $this->validatePolicyShape($attributes, $rule);
             $this->validateUniqueIdentity($program, $attributes, $rule);
 
+            $program->unsetRelations();
+            $beforeHealth = $this->programHealth->forProgram($program);
+
             $rule->fill($attributes);
             $rule->program_id = $program->id;
             $rule->updated_by_user_id = $actorUserId;
@@ -64,21 +67,28 @@ final class SaveRule
 
             $program->unsetRelations();
             $health = $this->programHealth->forProgram($program);
+            $blockingConfigurationErrors = $health->configuration
+                ->blockingErrorsComparedTo($beforeHealth->configuration);
 
-            if ((bool) $attributes['enabled'] && ! $health->configuration->valid()) {
+            if ((bool) $attributes['enabled'] && $blockingConfigurationErrors !== []) {
                 throw ValidationException::withMessages([
                     'rule_status' => array_merge(
-                        ['This enabled rule would make the Program policy configuration invalid.'],
-                        $health->configuration->errors,
+                        ['Rule was not saved because the proposed configuration introduces or worsens an invalid policy.'],
+                        $blockingConfigurationErrors,
                     ),
                 ]);
             }
 
-            if ($program->status === ProgramStatus::ENABLED && $health->runtimeErrors !== []) {
+            $newRuntimeErrors = array_values(array_diff(
+                $health->runtimeErrors,
+                $beforeHealth->runtimeErrors,
+            ));
+
+            if ($program->status === ProgramStatus::ENABLED && $newRuntimeErrors !== []) {
                 throw ValidationException::withMessages([
                     'rule_status' => array_merge(
                         ['This rule would make the enabled Program operationally invalid.'],
-                        $health->runtimeErrors,
+                        $newRuntimeErrors,
                     ),
                 ]);
             }

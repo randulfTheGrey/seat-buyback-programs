@@ -11,7 +11,6 @@
 @section('page_description', $editing ? 'Edit sparse rule' : 'Create sparse rule')
 
 @section('full')
-  @if($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
   <form method="post" action="{{ $editing ? route('buyback.admin.programs.rules.update', [$program, $rule]) : route('buyback.admin.programs.rules.store', $program) }}">
     @csrf
     @if($editing) @method('PATCH') @endif

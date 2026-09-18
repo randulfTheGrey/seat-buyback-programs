@@ -205,14 +205,17 @@ final class PolicyEvaluator
         try {
             return new BasisPoints($value);
         } catch (InvalidArgumentException $exception) {
-            throw new InvalidEffectivePolicyException(sprintf(
-                'Applying %s rule%s produced %d basis points; effective modifiers must be between %d and %d.',
-                $source->value,
-                $rule->ruleId === null ? '' : sprintf(' #%d', $rule->ruleId),
-                $value,
-                BasisPoints::MIN,
-                BasisPoints::MAX,
-            ), previous: $exception);
+            throw new InvalidEffectivePolicyException(new EffectiveModifierViolation(
+                source: $source,
+                ruleId: $rule->ruleId,
+                targetType: $rule->targetType,
+                targetId: $rule->targetId,
+                compressionQualifier: $rule->compressionQualifier,
+                operation: $rule->modifierOperation,
+                previousBps: $current->value,
+                operandBps: $rule->modifierBps?->value,
+                resultingBps: $value,
+            ), $exception);
         }
     }
 }

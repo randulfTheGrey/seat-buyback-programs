@@ -29,7 +29,8 @@ final class SaveProgramConfiguration
     ): array {
         return DB::transaction(function () use ($program, $attributes, $references, $actorUserId): array {
             $creating = $program === null;
-            $beforeHealth = ! $creating && $program->status === ProgramStatus::ENABLED
+            $wasEnabled = ! $creating && $program->status === ProgramStatus::ENABLED;
+            $beforeHealth = ! $creating
                 ? $this->health->forProgram($program)
                 : null;
             $program ??= new BuybackProgram();
@@ -63,15 +64,17 @@ final class SaveProgramConfiguration
             $program->unsetRelations();
             $result = $this->health->forProgram($program);
 
-            $newRuntimeErrors = $beforeHealth === null
-                ? $result->runtimeErrors
-                : array_values(array_diff($result->runtimeErrors, $beforeHealth->runtimeErrors));
+            $newRuntimeErrors = $wasEnabled && $beforeHealth !== null
+                ? array_values(array_diff($result->runtimeErrors, $beforeHealth->runtimeErrors))
+                : $result->runtimeErrors;
+            $blockingConfigurationErrors = $result->configuration
+                ->blockingErrorsComparedTo($beforeHealth?->configuration);
 
-            if (! $result->configuration->valid()) {
+            if ($blockingConfigurationErrors !== []) {
                 throw ValidationException::withMessages([
                     'status' => array_merge(
-                        ['Program policy configuration is invalid.'],
-                        $result->configuration->errors,
+                        ['Program was not saved because the proposed configuration introduces or worsens an invalid policy.'],
+                        $blockingConfigurationErrors,
                     ),
                 ]);
             }

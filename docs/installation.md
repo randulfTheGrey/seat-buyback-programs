@@ -1,9 +1,8 @@
 # Installation
 
-This guide installs the `1.0.0-rc.1` release candidate into an existing SeAT 5
-application. The package is not available from Packagist until the public
-repository, tag, and package registration steps in [releasing.md](releasing.md)
-are complete.
+This guide installs the newest published `1.0.0` release candidate into an
+existing SeAT 5 application. Published tags are distributed from the public
+GitHub repository through Packagist.
 
 ## Requirements
 
@@ -35,9 +34,9 @@ php artisan optimize:clear
 php artisan up
 ```
 
-The `@RC` stability flag admits `1.0.0-rc.1` without changing the root project's
-global minimum stability. Once stable `1.0.0` exists, normal stable constraints
-can replace it.
+The `@RC` stability flag admits the newest matching `1.0.0` release candidate
+without changing the root project's global minimum stability. Once stable
+`1.0.0` exists, normal stable constraints can replace it.
 
 Laravel package discovery loads
 `RandulfTheGrey\Seat\BuybackPrograms\BuybackProgramsServiceProvider`. Manual

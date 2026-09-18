@@ -12,12 +12,12 @@ The release manager records evidence for every item before publication.
 - [ ] Current tree, history review, and distribution archive contain no secrets or
       inappropriate private paths/hosts/configuration.
 - [ ] README, installation, upgrade, configuration, and operations docs are current.
-- [ ] CHANGELOG and `1.0.0-rc.1` release notes are ready.
+- [ ] CHANGELOG and `docs/releases/<version>.md` release notes are ready.
 - [ ] Clean public export was taken from the exact successful GitLab job artifact;
       no private Git history or refs were pushed.
 - [ ] Private release record maps the GitLab commit/pipeline, archive SHA-256 and
       file manifest, public GitHub commit, and public tag.
-- [ ] Separate annotated `v1.0.0-rc.1` tags identify the corresponding private and
+- [ ] Separate annotated `v<version>` tags identify the corresponding private and
       public release commits.
 - [ ] GitHub Release is published using the prepared release notes.
 - [ ] Packagist package is registered/updated from the public GitHub repository.

@@ -14,15 +14,14 @@ SeAT permissions.
 
 ## Release status
 
-The first public target is **1.0.0-rc.1**. It is a release candidate intended
-for public installation and package validation before stable `1.0.0`. There is
-no prior public version.
+The current candidate is **1.0.0-rc.3**, a focused regression-fix release in
+the public `1.0.0` validation line. Release candidates are intended for package,
+upgrade, and workflow validation before stable `1.0.0`.
 
-The source repository will be
-[`randulfTheGrey/seat-buyback-programs`](https://github.com/randulfTheGrey/seat-buyback-programs).
-Until that repository and its RC tag are public, the Composer command below is
-the intended post-publication installation command and will not resolve from
-Packagist.
+Public source and release tags are hosted at
+[`randulfTheGrey/seat-buyback-programs`](https://github.com/randulfTheGrey/seat-buyback-programs),
+and published tags are available through Packagist. See the
+[RC3 release notes](docs/releases/1.0.0-rc.3.md) for this candidate's changes.
 
 ## Compatibility
 
@@ -49,8 +48,8 @@ plugin-owned tables; SeAT core tables are never altered.
 
 ## Installation
 
-After the GitHub repository, RC tag, and Packagist package are published, run
-these commands from the root of the SeAT installation as its application user:
+To install the newest published `1.0.0` release candidate, run these commands
+from the root of the SeAT installation as its application user:
 
 ```bash
 php artisan down

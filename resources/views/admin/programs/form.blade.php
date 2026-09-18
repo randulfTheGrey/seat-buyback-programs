@@ -17,12 +17,6 @@
   @if(session('warnings'))
     @foreach(session('warnings') as $warning)<div class="alert alert-warning">{{ $warning }}</div>@endforeach
   @endif
-  @if($errors->any())
-    <div class="alert alert-danger" role="alert">
-      <strong>Configuration was not saved.</strong>
-      <ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
-    </div>
-  @endif
 
   @if($health)
     <div class="card card-outline {{ $health->operational() ? 'card-success' : 'card-warning' }}">
@@ -33,9 +27,11 @@
             <div class="col-md-4"><strong>{{ $channel }}</strong>: {{ $state['message'] }}</div>
           @endforeach
         </div>
-        @foreach(array_merge($health->configuration->errors, $health->runtimeErrors) as $error)
-          <div class="text-danger mt-2">{{ $error }}</div>
-        @endforeach
+        @unless($errors->any())
+          @foreach(array_merge($health->configuration->errors, $health->runtimeErrors) as $error)
+            <div class="text-danger mt-2">{{ $error }}</div>
+          @endforeach
+        @endunless
         @foreach($health->warnings as $warning)<div class="text-warning mt-2">{{ $warning }}</div>@endforeach
       </div>
     </div>

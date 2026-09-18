@@ -13,18 +13,18 @@ GitHub becomes authoritative. GitLab then becomes a read-only historical archive
 or downstream mirror; the two repositories must not remain competing development
 authorities. See ADR 0015.
 
-The project follows Semantic Versioning. `1.0.0-rc.1` is the first public
+The project follows Semantic Versioning. `1.0.0-rc.1` was the first public
 release candidate; stable `1.0.0` follows successful public/package validation.
 Pre-stable RC behavior and migrations may evolve with responsible release notes.
 After stable release, breaking public changes require an appropriate major
 version.
 
-Use annotated tags in the form `v1.0.0-rc.1`. Composer normalizes the leading
-`v`, and the convention is compatible with common PHP/GitHub practice. Do not
-create or push the tag until the checklist is complete and publication is
-explicitly authorized.
+Use annotated tags in the form `v<version>`, for example `v1.0.0-rc.3`.
+Composer normalizes the leading `v`, and the convention is compatible with
+common PHP/GitHub practice. Do not create or push the tag until the checklist is
+complete and publication is explicitly authorized.
 
-## Prepare the clean public GitHub repository
+## First public GitHub bootstrap
 
 Create exactly `randulfTheGrey/seat-buyback-programs` on GitHub as a public,
 empty repository. Do not initialize it with a README, license, or unrelated
@@ -84,10 +84,22 @@ Publish the GitHub Release from the public tag using
 [the prepared release notes](releases/1.0.0-rc.1.md) and attach the recorded
 archive checksum. GitLab CI remains release authority throughout RC validation.
 
-For a later RC, start from a clone of the clean public repository, replace its
-working tree with the newly validated source artifact, verify the manifest, and
-commit the synchronization normally. This retains public release-to-release
-diffs without importing private history.
+The commands above document the one-time `1.0.0-rc.1` bootstrap. Do not
+reinitialize the public repository for a later release.
+
+## Synchronize a later release candidate
+
+Start from a clean clone of the public repository. Replace its working tree with
+the newly validated source artifact from the exact successful GitLab pipeline,
+verify the archive and file manifest, and commit the synchronization normally.
+This retains public release-to-release diffs without importing private history.
+
+Create separate annotated `v<version>` tags on the corresponding authoritative
+GitLab commit and clean public commit. Push only the clean public commit and its
+tag to GitHub. Publish the GitHub prerelease from that public tag using the
+reviewed `docs/releases/<version>.md` notes, and attach all three recorded
+release artifacts: the package ZIP, archive SHA-256, and per-file SHA-256
+manifest.
 
 ## Packagist
 
@@ -96,8 +108,8 @@ After the GitHub repository is public and the tag is visible:
 1. Sign in to Packagist with the intended maintainer account.
 2. Submit `https://github.com/randulfTheGrey/seat-buyback-programs`.
 3. Confirm the discovered name is exactly
-   `randulfthegrey/seat-buyback-programs`, license is MIT, and version is
-   `1.0.0-rc.1`.
+   `randulfthegrey/seat-buyback-programs`, the license is MIT, and the intended
+   public tag is visible.
 4. Enable GitHub/Packagist automatic updates using the current Packagist GitHub
    integration or webhook guidance.
 5. Verify the dist archive matches the GitHub tag and contains no private data.

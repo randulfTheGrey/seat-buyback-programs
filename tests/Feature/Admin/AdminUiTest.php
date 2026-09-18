@@ -16,9 +16,12 @@ use Illuminate\Support\Facades\View;
 use RandulfTheGrey\Seat\BuybackPrograms\Application\Admin\ProgramHealthService;
 use RandulfTheGrey\Seat\BuybackPrograms\Contracts\CompressionSync;
 use RandulfTheGrey\Seat\BuybackPrograms\Domain\Compression\CompressionSyncResult;
+use RandulfTheGrey\Seat\BuybackPrograms\Domain\Rules\ItemPolicyContext;
+use RandulfTheGrey\Seat\BuybackPrograms\Domain\Rules\PolicyEvaluator;
 use RandulfTheGrey\Seat\BuybackPrograms\Enums\Acceptance;
 use RandulfTheGrey\Seat\BuybackPrograms\Enums\CompressionDataStatus;
 use RandulfTheGrey\Seat\BuybackPrograms\Enums\CompressionQualifier;
+use RandulfTheGrey\Seat\BuybackPrograms\Enums\CompressionState;
 use RandulfTheGrey\Seat\BuybackPrograms\Enums\CompressionSyncOutcome;
 use RandulfTheGrey\Seat\BuybackPrograms\Enums\ProgramStatus;
 use RandulfTheGrey\Seat\BuybackPrograms\Enums\ReferenceMode;
@@ -28,6 +31,7 @@ use RandulfTheGrey\Seat\BuybackPrograms\Models\BuybackQuote;
 use RandulfTheGrey\Seat\BuybackPrograms\Models\BuybackRule;
 use RandulfTheGrey\Seat\BuybackPrograms\Models\CompressionMapping;
 use RandulfTheGrey\Seat\BuybackPrograms\Models\CompressionMetadata;
+use RandulfTheGrey\Seat\BuybackPrograms\Persistence\PolicyInputMapper;
 use RandulfTheGrey\Seat\BuybackPrograms\Tests\TestCase;
 
 final class AdminUiTest extends TestCase
@@ -362,6 +366,160 @@ final class AdminUiTest extends TestCase
             'default_modifier_percentage' => '80.01',
         ]))->assertSessionHasErrors('status');
         self::assertSame(8000, $program->fresh()->default_modifier_bps->value);
+    }
+
+    public function test_valid_type_replacement_is_saved_despite_an_unchanged_invalid_group_in_another_context(): void
+    {
+        $program = $this->program();
+        $program->forceFill(['default_modifier_bps' => -1000])->save();
+        $program->rules()->create($this->storedRule([
+            'target_type' => 'GROUP',
+            'target_id' => 19,
+            'modifier_operation' => 'ADJUST',
+            'modifier_bps' => -10000,
+        ]));
+        $this->actingAs($this->user(42, ['buyback.admin']));
+
+        $this->post(route('buyback.admin.programs.rules.store', $program), $this->rulePayload([
+            'target_type' => 'TYPE',
+            'target_id' => 34,
+            'modifier_operation' => 'REPLACE',
+            'modifier_direction' => 'discount',
+            'modifier_percentage' => '100',
+        ]))->assertRedirect(route('buyback.admin.programs.rules.index', $program));
+
+        $program = $program->fresh('rules');
+        $typeRule = $program->rules->firstWhere('target_type', \RandulfTheGrey\Seat\BuybackPrograms\Enums\RuleTargetType::TYPE);
+        self::assertNotNull($typeRule);
+        self::assertSame(-10000, $typeRule->modifier_bps->value);
+
+        $mapper = $this->app->make(PolicyInputMapper::class);
+        $effective = $this->app->make(PolicyEvaluator::class)->evaluate(
+            $mapper->defaults($program),
+            new ItemPolicyContext(34, 18, CompressionState::NOT_APPLICABLE),
+            $mapper->activeRules($program->rules),
+        );
+        self::assertSame(-10000, $effective->effectiveModifierBps->value);
+
+        $health = $this->app->make(ProgramHealthService::class)->forProgram($program);
+        self::assertFalse($health->configuration->valid());
+        self::assertStringContainsString('item group “Ore”', implode(' ', $health->configuration->errors));
+    }
+
+    public function test_invalid_adjustment_is_rejected_with_one_actionable_manager_diagnostic(): void
+    {
+        $program = $this->program();
+        $program->forceFill(['default_modifier_bps' => -1000])->save();
+        $this->actingAs($this->user(42, ['buyback.admin']));
+        $createUrl = route('buyback.admin.programs.rules.create', $program);
+
+        $response = $this->from($createUrl)->post(
+            route('buyback.admin.programs.rules.store', $program),
+            $this->rulePayload([
+                'target_type' => 'TYPE',
+                'target_id' => 34,
+                'modifier_operation' => 'ADJUST',
+                'modifier_direction' => 'discount',
+                'modifier_percentage' => '100',
+            ]),
+        );
+
+        $response->assertRedirect($createUrl)->assertSessionHasErrors('rule_status');
+        self::assertSame(0, $program->rules()->count());
+
+        $rendered = $this->get($createUrl)->assertOk()->getContent();
+        $diagnostic = 'The ADJUST modifier for item type “Tritanium” would adjust 10% discount by 100% discount, producing 110% discount.';
+        self::assertSame(1, substr_count($rendered, $diagnostic));
+        self::assertSame(1, substr_count($rendered, 'Rule was not saved'));
+        self::assertStringNotContainsString('-11000', $rendered);
+    }
+
+    public function test_worsened_persisted_violation_is_blocked_and_transient_error_has_one_presentation_owner(): void
+    {
+        $program = $this->program();
+        $program->forceFill(['default_modifier_bps' => -1000])->save();
+        $program->rules()->create($this->storedRule([
+            'target_type' => 'GROUP',
+            'target_id' => 19,
+            'modifier_operation' => 'ADJUST',
+            'modifier_bps' => -10000,
+        ]));
+        $this->actingAs($this->user(42, ['buyback.admin']));
+        $editUrl = route('buyback.admin.programs.edit', $program);
+
+        $this->from($editUrl)->patch(route('buyback.admin.programs.update', $program), $this->programPayload([
+            'default_modifier_direction' => 'discount',
+            'default_modifier_percentage' => '20',
+        ]))->assertRedirect($editUrl)->assertSessionHasErrors('status');
+        self::assertSame(-1000, $program->fresh()->default_modifier_bps->value);
+
+        $failedResponse = $this->get($editUrl)->assertOk()->getContent();
+        self::assertSame(1, substr_count($failedResponse, 'producing 120% discount'));
+        self::assertStringNotContainsString('producing 110% discount', $failedResponse);
+
+        $durableHealth = $this->get($editUrl)->assertOk()->getContent();
+        self::assertSame(1, substr_count($durableHealth, 'producing 110% discount'));
+        self::assertStringNotContainsString('-11000', $durableHealth);
+    }
+
+    public function test_persisted_invalid_rule_can_be_improved_and_then_fully_corrected(): void
+    {
+        $program = $this->program();
+        $program->forceFill(['default_modifier_bps' => -1000])->save();
+        $rule = $program->rules()->create($this->storedRule([
+            'target_type' => 'GROUP',
+            'target_id' => 19,
+            'modifier_operation' => 'ADJUST',
+            'modifier_bps' => -10000,
+        ]));
+        $this->actingAs($this->user(42, ['buyback.admin']));
+        $route = route('buyback.admin.programs.rules.update', [$program, $rule]);
+
+        $this->patch($route, $this->rulePayload([
+            'target_type' => 'GROUP',
+            'target_id' => 19,
+            'modifier_operation' => 'ADJUST',
+            'modifier_direction' => 'discount',
+            'modifier_percentage' => '95',
+        ]))->assertRedirect(route('buyback.admin.programs.rules.index', $program));
+        self::assertSame(-9500, $rule->fresh()->modifier_bps->value);
+        self::assertFalse($this->app->make(ProgramHealthService::class)->forProgram($program->fresh())->configuration->valid());
+
+        $this->patch($route, $this->rulePayload([
+            'target_type' => 'GROUP',
+            'target_id' => 19,
+            'modifier_operation' => 'ADJUST',
+            'modifier_direction' => 'discount',
+            'modifier_percentage' => '90',
+        ]))->assertRedirect(route('buyback.admin.programs.rules.index', $program));
+        self::assertSame(-9000, $rule->fresh()->modifier_bps->value);
+        self::assertTrue($this->app->make(ProgramHealthService::class)->forProgram($program->fresh())->configuration->valid());
+    }
+
+    public function test_program_health_deduplicates_one_rule_across_real_item_contexts_but_keeps_distinct_violations(): void
+    {
+        $program = $this->program();
+        $program->forceFill(['default_modifier_bps' => -1000])->save();
+        $program->rules()->createMany([
+            $this->storedRule([
+                'target_type' => 'GROUP',
+                'target_id' => 18,
+                'modifier_operation' => 'ADJUST',
+                'modifier_bps' => -10000,
+            ]),
+            $this->storedRule([
+                'target_type' => 'GROUP',
+                'target_id' => 19,
+                'modifier_operation' => 'ADJUST',
+                'modifier_bps' => -10000,
+            ]),
+        ]);
+
+        $health = $this->app->make(ProgramHealthService::class)->forProgram($program->fresh());
+
+        self::assertCount(2, $health->configuration->effectivePolicyDiagnostics);
+        self::assertSame(1, substr_count(implode(' ', $health->configuration->errors), 'item group “Mineral”'));
+        self::assertSame(1, substr_count(implode(' ', $health->configuration->errors), 'item group “Ore”'));
     }
 
     public function test_rule_create_page_renders_searchable_target_control(): void

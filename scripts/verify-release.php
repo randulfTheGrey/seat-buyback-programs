@@ -25,6 +25,8 @@ $requiredFiles = [
     'docs/operations.md',
     'docs/release-checklist.md',
     'docs/releases/1.0.0-rc.1.md',
+    'docs/releases/1.0.0-rc.2.md',
+    'docs/releases/1.0.0-rc.3.md',
     'docs/releasing.md',
     'docs/upgrading.md',
 ];
