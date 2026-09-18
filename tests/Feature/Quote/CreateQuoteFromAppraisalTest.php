@@ -281,6 +281,8 @@ final class CreateQuoteFromAppraisalTest extends TestCase
         } elseif ($variant === 'line-total-mismatch') {
             $lines = [$this->pricedLine(lineTotal: '30.04')];
             $total = '30.04';
+        } elseif ($variant === 'modifier-out-of-range') {
+            $lines = [$this->pricedLine(modifierBps: 10001)];
         }
 
         $token = $this->store($this->appraisal($program, $lines, $total));
@@ -304,6 +306,7 @@ final class CreateQuoteFromAppraisalTest extends TestCase
             'missing-pricing-version',
             'trusted-total-mismatch',
             'line-total-mismatch',
+            'modifier-out-of-range',
         ] as $variant) {
             yield $variant => [$variant];
         }

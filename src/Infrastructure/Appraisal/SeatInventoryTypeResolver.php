@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RandulfTheGrey\Seat\BuybackPrograms\Infrastructure\Appraisal;
 
+use Illuminate\Support\Facades\DB;
 use Seat\Eveapi\Models\Sde\InvType;
 use RandulfTheGrey\Seat\BuybackPrograms\Contracts\InventoryTypeResolver;
 use RandulfTheGrey\Seat\BuybackPrograms\Domain\Appraisal\ResolvedInventoryType;
@@ -14,54 +15,70 @@ final class SeatInventoryTypeResolver implements InventoryTypeResolver
 
     public function resolveExact(iterable $candidateNames): array
     {
-        $requested = [];
+        /** @var array<string, array<string, true>> $requestedByLookupName */
+        $requestedByLookupName = [];
 
         foreach ($candidateNames as $name) {
             if (is_string($name) && $name !== '') {
-                $requested[$name] = true;
+                $requestedByLookupName[$this->lookupName($name)][$name] = true;
             }
         }
 
-        if ($requested === []) {
+        if ($requestedByLookupName === []) {
             return [];
         }
 
-        $resolved = [];
+        /** @var array<string, ResolvedInventoryType> $resolvedByLookupName */
+        $resolvedByLookupName = [];
         $ambiguous = [];
 
-        foreach (array_chunk(array_keys($requested), self::QUERY_CHUNK_SIZE) as $names) {
+        foreach (array_chunk(array_keys($requestedByLookupName), self::QUERY_CHUNK_SIZE) as $lookupNames) {
             $types = InvType::query()
                 ->where('published', true)
-                ->whereIn('typeName', $names)
+                ->whereIn(DB::raw('LOWER(typeName)'), $lookupNames)
                 ->get(['typeID', 'typeName', 'groupID']);
 
             foreach ($types as $type) {
-                $name = (string) $type->typeName;
+                $canonicalName = (string) $type->typeName;
+                $lookupName = $this->lookupName($canonicalName);
 
-                // Some database collations make whereIn case-insensitive. Financial
-                // resolution remains exact by checking the returned SDE value here.
-                if (! isset($requested[$name])) {
+                // Keep matching exact apart from case even when the database uses a
+                // broader collation. No partial or fuzzy candidate is accepted here.
+                if (! isset($requestedByLookupName[$lookupName])) {
                     continue;
                 }
 
-                if (isset($resolved[$name])) {
-                    $ambiguous[$name] = true;
-                    unset($resolved[$name]);
+                if (isset($resolvedByLookupName[$lookupName])) {
+                    $ambiguous[$lookupName] = true;
+                    unset($resolvedByLookupName[$lookupName]);
                     continue;
                 }
 
-                if (! isset($ambiguous[$name])) {
-                    $resolved[$name] = new ResolvedInventoryType(
+                if (! isset($ambiguous[$lookupName])) {
+                    $resolvedByLookupName[$lookupName] = new ResolvedInventoryType(
                         (int) $type->typeID,
-                        $name,
+                        $canonicalName,
                         (int) $type->groupID,
                     );
                 }
             }
         }
 
+        $resolved = [];
+
+        foreach ($resolvedByLookupName as $lookupName => $type) {
+            foreach (array_keys($requestedByLookupName[$lookupName]) as $candidateName) {
+                $resolved[$candidateName] = $type;
+            }
+        }
+
         ksort($resolved, SORT_STRING);
 
         return $resolved;
+    }
+
+    private function lookupName(string $name): string
+    {
+        return mb_strtolower($name, 'UTF-8');
     }
 }

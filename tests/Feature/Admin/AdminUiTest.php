@@ -313,6 +313,57 @@ final class AdminUiTest extends TestCase
             ->assertSee('Administrator note');
     }
 
+    public function test_disabled_program_rejects_deterministic_effective_modifier_overflow_on_rule_and_default_saves(): void
+    {
+        $this->usableCompressionData();
+        $program = $this->program();
+        $program->forceFill(['default_modifier_bps' => 8000])->save();
+        $program->rules()->createMany([
+            $this->storedRule([
+                'modifier_operation' => 'ADJUST',
+                'modifier_bps' => 500,
+            ]),
+            $this->storedRule([
+                'compression_qualifier' => 'COMPRESSED',
+                'modifier_operation' => 'ADJUST',
+                'modifier_bps' => 500,
+            ]),
+        ]);
+        $this->actingAs($this->user(42, ['buyback.admin']));
+        $typeRule = $this->rulePayload([
+            'target_type' => 'TYPE',
+            'target_id' => 34,
+            'compression_qualifier' => 'ANY',
+            'modifier_operation' => 'ADJUST',
+            'modifier_direction' => 'premium',
+            'modifier_percentage' => '10.01',
+        ]);
+
+        $this->post(route('buyback.admin.programs.rules.store', $program), $typeRule)
+            ->assertSessionHasErrors('rule_status');
+        self::assertSame(2, $program->rules()->count());
+
+        $typeRule['modifier_percentage'] = '10.00';
+        $this->post(route('buyback.admin.programs.rules.store', $program), $typeRule)
+            ->assertRedirect(route('buyback.admin.programs.rules.index', $program));
+
+        $savedTypeRule = $program->rules()->where('target_type', 'TYPE')->sole();
+        self::assertSame(1000, $savedTypeRule->modifier_bps->value);
+
+        $typeRule['modifier_percentage'] = '10.01';
+        $this->patch(
+            route('buyback.admin.programs.rules.update', [$program, $savedTypeRule]),
+            $typeRule,
+        )->assertSessionHasErrors('rule_status');
+        self::assertSame(1000, $savedTypeRule->fresh()->modifier_bps->value);
+
+        $this->patch(route('buyback.admin.programs.update', $program), $this->programPayload([
+            'default_modifier_direction' => 'premium',
+            'default_modifier_percentage' => '80.01',
+        ]))->assertSessionHasErrors('status');
+        self::assertSame(8000, $program->fresh()->default_modifier_bps->value);
+    }
+
     public function test_rule_create_page_renders_searchable_target_control(): void
     {
         $program = $this->program();

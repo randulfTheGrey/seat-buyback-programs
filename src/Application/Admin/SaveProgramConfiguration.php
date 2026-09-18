@@ -67,14 +67,22 @@ final class SaveProgramConfiguration
                 ? $result->runtimeErrors
                 : array_values(array_diff($result->runtimeErrors, $beforeHealth->runtimeErrors));
 
+            if (! $result->configuration->valid()) {
+                throw ValidationException::withMessages([
+                    'status' => array_merge(
+                        ['Program policy configuration is invalid.'],
+                        $result->configuration->errors,
+                    ),
+                ]);
+            }
+
             if (
                 $program->status === ProgramStatus::ENABLED
-                && (! $result->configuration->valid() || $newRuntimeErrors !== [])
+                && $newRuntimeErrors !== []
             ) {
                 throw ValidationException::withMessages([
                     'status' => array_merge(
                         ['Program cannot be enabled.'],
-                        $result->configuration->errors,
                         $newRuntimeErrors,
                     ),
                 ]);

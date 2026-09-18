@@ -434,6 +434,123 @@ final class PolicyEvaluatorTest extends TestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{int, int}>
+     */
+    public static function effectiveBoundaryProvider(): iterable
+    {
+        yield 'maximum premium' => [1, 10000];
+        yield 'maximum discount' => [-1, -10000];
+    }
+
+    #[DataProvider('effectiveBoundaryProvider')]
+    public function test_multi_level_adjustments_accept_exact_effective_boundaries(
+        int $direction,
+        int $expected,
+    ): void {
+        $result = $this->evaluator->evaluate(
+            $this->defaults(modifierBps: 8000 * $direction),
+            $this->item(CompressionState::COMPRESSED),
+            [
+                $this->rule(
+                    RuleTargetType::GROUP,
+                    18,
+                    modifierOperation: ModifierOperation::ADJUST,
+                    modifierBps: 500 * $direction,
+                ),
+                $this->rule(
+                    RuleTargetType::GROUP,
+                    18,
+                    CompressionQualifier::COMPRESSED,
+                    modifierOperation: ModifierOperation::ADJUST,
+                    modifierBps: 500 * $direction,
+                ),
+                $this->rule(
+                    RuleTargetType::TYPE,
+                    34,
+                    modifierOperation: ModifierOperation::ADJUST,
+                    modifierBps: 1000 * $direction,
+                ),
+            ],
+        );
+
+        self::assertSame($expected, $result->effectiveModifierBps->value);
+        self::assertSame([8500, 9000, 10000], array_map(
+            static fn ($layer): int => abs($layer->modifierAfterBps->value),
+            $result->layers,
+        ));
+    }
+
+    /**
+     * @return iterable<string, array{int, int}>
+     */
+    public static function effectiveImmediateOverflowProvider(): iterable
+    {
+        yield 'one basis point above maximum' => [1, 10001];
+        yield 'one basis point below minimum' => [-1, -10001];
+    }
+
+    #[DataProvider('effectiveImmediateOverflowProvider')]
+    public function test_individually_valid_multi_level_rules_cannot_compose_one_point_outside_bounds(
+        int $direction,
+        int $invalid,
+    ): void {
+        $this->expectException(InvalidEffectivePolicyException::class);
+        $this->expectExceptionMessage(sprintf('produced %d basis points', $invalid));
+
+        $this->evaluator->evaluate(
+            $this->defaults(modifierBps: 8000 * $direction),
+            $this->item(CompressionState::COMPRESSED),
+            [
+                $this->rule(
+                    RuleTargetType::GROUP,
+                    18,
+                    modifierOperation: ModifierOperation::ADJUST,
+                    modifierBps: 500 * $direction,
+                ),
+                $this->rule(
+                    RuleTargetType::GROUP,
+                    18,
+                    CompressionQualifier::COMPRESSED,
+                    modifierOperation: ModifierOperation::ADJUST,
+                    modifierBps: 500 * $direction,
+                ),
+                $this->rule(
+                    RuleTargetType::TYPE,
+                    34,
+                    modifierOperation: ModifierOperation::ADJUST,
+                    modifierBps: 1001 * $direction,
+                    ruleId: 92,
+                ),
+            ],
+        );
+    }
+
+    public function test_invalid_intermediate_adjustment_fails_even_when_later_replace_would_restore_range(): void
+    {
+        $this->expectException(InvalidEffectivePolicyException::class);
+        $this->expectExceptionMessage('produced 11000 basis points');
+
+        $this->evaluator->evaluate(
+            $this->defaults(modifierBps: 8000),
+            $this->item(),
+            [
+                $this->rule(
+                    RuleTargetType::GROUP,
+                    18,
+                    modifierOperation: ModifierOperation::ADJUST,
+                    modifierBps: 3000,
+                ),
+                $this->rule(
+                    RuleTargetType::TYPE,
+                    34,
+                    modifierOperation: ModifierOperation::REPLACE,
+                    modifierBps: 0,
+                ),
+            ],
+        );
+    }
+
     public function test_program_baseline_and_all_three_sparse_layers_apply_in_normative_order(): void
     {
         $rules = $this->allSparseRules();

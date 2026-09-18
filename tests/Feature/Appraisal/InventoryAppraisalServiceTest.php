@@ -65,6 +65,7 @@ final class InventoryAppraisalServiceTest extends TestCase
             ['typeID' => 37, 'groupID' => 21, 'typeName' => 'Isogen', 'published' => true],
             ['typeID' => 38, 'groupID' => 22, 'typeName' => 'Nocxium', 'published' => true],
             ['typeID' => 634, 'groupID' => 18, 'typeName' => 'Compressed Tritanium', 'published' => true],
+            ['typeID' => 1230, 'groupID' => 465, 'typeName' => 'Compressed Veldspar', 'published' => true],
         ]);
     }
 
@@ -164,6 +165,38 @@ final class InventoryAppraisalServiceTest extends TestCase
             $queries,
             static fn (array $query): bool => str_contains($query['query'], 'from "buyback_rules"'),
         ));
+    }
+
+    public function test_case_variants_resolve_to_canonical_type_and_follow_existing_duplicate_merging(): void
+    {
+        $program = $this->program();
+        $gateway = PipelineFakePriceGateway::withPrices([10 => [1230 => '2']]);
+        $this->app->instance(SeatPriceProviderGateway::class, $gateway);
+
+        $result = $this->service()->appraise($program, 42, implode("\n", [
+            'Compressed Veldspar 100',
+            'compressed veldspar 200',
+            'COMPRESSED VELDSPAR 300',
+            'cOmPrEsSeD vElDsPaR 400',
+            'Compressed Veldspa 5',
+            'Veldspar 6',
+        ]))->result;
+
+        self::assertSame([
+            AppraisalLineStatus::PRICED,
+            AppraisalLineStatus::UNKNOWN,
+            AppraisalLineStatus::UNKNOWN,
+        ], array_column($result->lines, 'status'));
+
+        $resolved = $result->lines[0];
+        self::assertSame(1230, $resolved->typeId);
+        self::assertSame('Compressed Veldspar', $resolved->typeName);
+        self::assertSame(1000, $resolved->quantity);
+        self::assertCount(4, $resolved->rawLines);
+        self::assertSame('2000.00', $resolved->lineTotal);
+        self::assertSame([[10, [1230]]], $gateway->calls);
+        self::assertSame('Compressed Veldspa', $result->lines[1]->candidateName);
+        self::assertSame('Veldspar', $result->lines[2]->candidateName);
     }
 
     public function test_missing_compression_data_blocks_only_programs_with_qualified_rules(): void

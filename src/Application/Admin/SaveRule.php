@@ -65,11 +65,19 @@ final class SaveRule
             $program->unsetRelations();
             $health = $this->programHealth->forProgram($program);
 
-            if ($program->status === ProgramStatus::ENABLED && ! $health->operational()) {
+            if ((bool) $attributes['enabled'] && ! $health->configuration->valid()) {
+                throw ValidationException::withMessages([
+                    'rule_status' => array_merge(
+                        ['This enabled rule would make the Program policy configuration invalid.'],
+                        $health->configuration->errors,
+                    ),
+                ]);
+            }
+
+            if ($program->status === ProgramStatus::ENABLED && $health->runtimeErrors !== []) {
                 throw ValidationException::withMessages([
                     'rule_status' => array_merge(
                         ['This rule would make the enabled Program operationally invalid.'],
-                        $health->configuration->errors,
                         $health->runtimeErrors,
                     ),
                 ]);
