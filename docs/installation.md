@@ -45,6 +45,11 @@ host application. The provider loads plugin-owned migrations and registers the
 permissions, routes, command, views, and daily schedule. It does not modify SeAT
 core tables.
 
+The standard SeAT plugin database seeder maintains normal plugin lifecycle
+metadata; it is not a permission synchronizer. Package discovery registers the
+permission definitions, and SeAT materializes their ACL records through its
+normal role-management flow.
+
 For SeAT Docker, add `randulfthegrey/seat-buyback-programs:^1.0@RC` to the
 installation's `SEAT_PLUGINS` list using the normal SeAT Docker workflow, rebuild
 the affected containers, and confirm the web, worker, and scheduler services are
@@ -52,15 +57,14 @@ healthy. Do not edit a running container as the durable installation method.
 
 ## Permissions
 
-Refresh plugin permissions with the SeAT plugin database seeder shown above,
-then grant the required permissions through normal SeAT roles:
+Grant the registered permissions through normal SeAT roles:
 
-- `buyback.request` for requesters;
-- `buyback.manage` for fulfillment managers;
-- `buyback.admin` for configuration administrators.
+- `randulfthegrey-buyback.request` for requesters;
+- `randulfthegrey-buyback.manage` for fulfillment managers;
+- `randulfthegrey-buyback.admin` for configuration administrators.
 
-Permissions are independent; `buyback.admin` does not imply `buyback.manage`,
-and `buyback.manage` does not imply `buyback.request`. Grant combinations
+Permissions are independent; `randulfthegrey-buyback.admin` does not imply `randulfthegrey-buyback.manage`,
+and `randulfthegrey-buyback.manage` does not imply `randulfthegrey-buyback.request`. Grant combinations
 explicitly when one person needs more than one workflow.
 
 ## Queue and scheduler
@@ -96,7 +100,7 @@ assigning each provider instance to the intended logical role.
 
 ## Create the first Program
 
-1. Grant yourself `buyback.admin` and open **Buyback Administration**.
+1. Grant yourself `randulfthegrey-buyback.admin` and open **Buyback Administration**.
 2. Create a Program. It starts `DISABLED` with default `ACCEPT`.
 3. Configure default reference, modifier, Quote validity, and contract text.
 4. Select the BUY and SELL provider instances and configure SPLIT.
@@ -104,8 +108,8 @@ assigning each provider instance to the intended logical role.
 6. Review Program health and the effective-rule preview.
 7. Enable the Program after pricing references and required compression data are
    healthy.
-8. With a separate `buyback.request` grant, perform an appraisal/Quote/Request
-   smoke test; use `buyback.manage` to validate fulfillment.
+8. With a separate `randulfthegrey-buyback.request` grant, perform an appraisal/Quote/Request
+   smoke test; use `randulfthegrey-buyback.manage` to validate fulfillment.
 
 See [configuration.md](configuration.md) for policy semantics and
 [operations.md](operations.md) for health and troubleshooting.

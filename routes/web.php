@@ -23,7 +23,7 @@ Route::middleware(['web', 'auth'])
     ->prefix((string) config('seat-buyback-programs.route_prefix', 'buyback'))
     ->name('buyback.')
     ->group(static function (): void {
-        Route::middleware('can:buyback.request')->group(static function (): void {
+        Route::middleware('can:randulfthegrey-buyback.request')->group(static function (): void {
             Route::get('', static fn () => redirect()->route('buyback.programs.index'))
                 ->name('index');
             Route::get('programs', [ProgramController::class, 'index'])
@@ -53,7 +53,7 @@ Route::middleware(['web', 'auth'])
         });
     });
 
-Route::middleware(['web', 'auth', 'can:buyback.manage'])
+Route::middleware(['web', 'auth', 'can:randulfthegrey-buyback.manage'])
     ->prefix((string) config('seat-buyback-programs.manager_route_prefix', 'buyback-manage'))
     ->name('buyback.manage.')
     ->group(static function (): void {
@@ -71,7 +71,7 @@ Route::middleware(['web', 'auth', 'can:buyback.manage'])
             ->name('requests.reject');
     });
 
-Route::middleware(['web', 'auth', 'can:buyback.admin'])
+Route::middleware(['web', 'auth', 'can:randulfthegrey-buyback.admin'])
     ->prefix((string) config('seat-buyback-programs.admin_route_prefix', 'buyback-admin'))
     ->name('buyback.admin.')
     ->group(static function (): void {

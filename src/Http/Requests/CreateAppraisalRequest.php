@@ -10,7 +10,7 @@ final class CreateAppraisalRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('buyback.request') === true;
+        return $this->user()?->can('randulfthegrey-buyback.request') === true;
     }
 
     /** @return array<string, list<string>> */

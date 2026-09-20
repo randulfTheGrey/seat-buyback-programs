@@ -41,7 +41,7 @@ final class BuybackProgramsServiceProvider extends AbstractSeatPlugin
 
         $this->mergeConfigFrom($root . '/config/plugin.php', self::CONFIG_KEY);
         $this->mergeConfigFrom($root . '/config/sidebar.php', 'package.sidebar');
-        $this->registerPermissions($root . '/config/permissions.php', 'buyback');
+        $this->registerPermissions($root . '/config/permissions.php', 'randulfthegrey-buyback');
 
         $this->app->singleton(CompressionSdeSource::class, CcpCompressionSdeSource::class);
         $this->app->singleton(CompressionSync::class, CompressionDataSynchronizer::class);

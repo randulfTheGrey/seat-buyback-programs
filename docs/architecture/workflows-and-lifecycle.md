@@ -115,9 +115,15 @@ Transitions use transactional conditional updates that require the stored state 
 
 ## Authorization and visibility
 
-`buyback.request`, `buyback.manage`, and `buyback.admin` are registered as independent SeAT permissions.
+`randulfthegrey-buyback.request`, `randulfthegrey-buyback.manage`, and `randulfthegrey-buyback.admin` are registered as independent SeAT permissions.
 
-Requester queries MUST be ownership-scoped through the Quote requester. Manager views may query and manage all submitted Requests but do not gain requester or administrator actions implicitly. Administrator views configure Programs and diagnostics. `buyback.admin` alone MUST NOT authorize completing or rejecting Requests; that requires `buyback.manage`.
+Their vendor-prefixed scope is part of the authorization contract. RC4 does not
+mutate legacy ACL rows because SeAT stores no package ownership for globally
+named permissions. Existing installations manually grant the new permissions,
+then clear Redis ACL caches and restart workers. The old identifiers are never
+authorization aliases for this package.
+
+Requester queries MUST be ownership-scoped through the Quote requester. Manager views may query and manage all submitted Requests but do not gain requester or administrator actions implicitly. Administrator views configure Programs and diagnostics. `randulfthegrey-buyback.admin` alone MUST NOT authorize completing or rejecting Requests; that requires `randulfthegrey-buyback.manage`.
 
 Controllers remain thin and enforce policy/resource authorization for every object. DataTables/query endpoints apply the same scopes as page and mutation endpoints. All mutations use POST, PATCH, or DELETE plus CSRF protection.
 

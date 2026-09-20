@@ -30,32 +30,32 @@ final class BuybackRequestPolicy
 
     public function viewAsManager(object $user, BuybackRequest $request): bool
     {
-        return $this->hasPermission($user, 'buyback.manage');
+        return $this->hasPermission($user, 'randulfthegrey-buyback.manage');
     }
 
     public function updateManagerContract(object $user, BuybackRequest $request): bool
     {
-        return $request->isPending() && $this->hasPermission($user, 'buyback.manage');
+        return $request->isPending() && $this->hasPermission($user, 'randulfthegrey-buyback.manage');
     }
 
     public function updateManagerNote(object $user, BuybackRequest $request): bool
     {
-        return $request->isPending() && $this->hasPermission($user, 'buyback.manage');
+        return $request->isPending() && $this->hasPermission($user, 'randulfthegrey-buyback.manage');
     }
 
     public function complete(object $user, BuybackRequest $request): bool
     {
-        return $request->isPending() && $this->hasPermission($user, 'buyback.manage');
+        return $request->isPending() && $this->hasPermission($user, 'randulfthegrey-buyback.manage');
     }
 
     public function reject(object $user, BuybackRequest $request): bool
     {
-        return $request->isPending() && $this->hasPermission($user, 'buyback.manage');
+        return $request->isPending() && $this->hasPermission($user, 'randulfthegrey-buyback.manage');
     }
 
     private function isRequesterOwner(object $user, BuybackRequest $request): bool
     {
-        if (! $this->hasPermission($user, 'buyback.request')) {
+        if (! $this->hasPermission($user, 'randulfthegrey-buyback.request')) {
             return false;
         }
 

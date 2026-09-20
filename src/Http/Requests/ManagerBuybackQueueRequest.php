@@ -12,7 +12,7 @@ final class ManagerBuybackQueueRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('buyback.manage') === true;
+        return $this->user()?->can('randulfthegrey-buyback.manage') === true;
     }
 
     /** @return array<string, mixed> */

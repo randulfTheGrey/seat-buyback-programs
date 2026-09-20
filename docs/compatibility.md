@@ -1,7 +1,8 @@
 # Compatibility Matrix
 
-Verified for the `1.0.0-rc.3` candidate on 2026-09-18 against the locked
-dependency set and the PHP 8.2/8.4 CI matrix.
+Verified for the targeted `1.0.0-rc.4` candidate on 2026-09-19 against the
+locked dependency set and the PHP 8.2/8.4 CI matrix. Publication remains a
+separate release-manager action.
 
 | Dependency | Package constraint | Current verified upstream | Notes |
 | --- | --- | --- | --- |

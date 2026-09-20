@@ -10,7 +10,7 @@ final class BuybackQuotePolicy
 {
     public function view(object $user, BuybackQuote $quote): bool
     {
-        return $this->hasPermission($user, 'buyback.request')
+        return $this->hasPermission($user, 'randulfthegrey-buyback.request')
             && (int) $quote->requester_user_id === $this->userId($user);
     }
 

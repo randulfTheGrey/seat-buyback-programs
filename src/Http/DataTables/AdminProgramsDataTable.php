@@ -20,7 +20,7 @@ final class AdminProgramsDataTable extends DataTable
 
     public function ajax(): JsonResponse
     {
-        abort_unless(request()->user()?->can('buyback.admin') === true, 403);
+        abort_unless(request()->user()?->can('randulfthegrey-buyback.admin') === true, 403);
 
         return datatables()->eloquent($this->query())
             ->editColumn('status', static fn (BuybackProgram $row): string => sprintf(
@@ -67,7 +67,7 @@ final class AdminProgramsDataTable extends DataTable
 
     public function query(): Builder
     {
-        abort_unless(request()->user()?->can('buyback.admin') === true, 403);
+        abort_unless(request()->user()?->can('randulfthegrey-buyback.admin') === true, 403);
 
         return BuybackProgram::query()->with(['priceReferences', 'rules']);
     }

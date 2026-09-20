@@ -35,6 +35,6 @@ final class BuybackRulePolicy
 
     private function isAdministrator(object $user): bool
     {
-        return method_exists($user, 'can') && $user->can('buyback.admin') === true;
+        return method_exists($user, 'can') && $user->can('randulfthegrey-buyback.admin') === true;
     }
 }

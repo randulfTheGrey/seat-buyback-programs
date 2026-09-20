@@ -12,14 +12,14 @@ final class PermissionsDefinitionTest extends TestCase
     {
         $definitions = require dirname(__DIR__, 2) . '/config/permissions.php';
         $names = array_map(
-            static fn (string $permission): string => 'buyback.' . $permission,
+            static fn (string $permission): string => 'randulfthegrey-buyback.' . $permission,
             array_keys($definitions),
         );
 
         self::assertSame([
-            'buyback.request',
-            'buyback.manage',
-            'buyback.admin',
+            'randulfthegrey-buyback.request',
+            'randulfthegrey-buyback.manage',
+            'randulfthegrey-buyback.admin',
         ], $names);
     }
 }

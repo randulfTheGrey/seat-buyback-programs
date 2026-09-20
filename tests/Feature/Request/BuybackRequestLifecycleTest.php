@@ -377,12 +377,12 @@ final class BuybackRequestLifecycleTest extends TestCase
         $request = $this->request(managerNote: 'Manager secret')->load('quote');
         $quotePolicy = new BuybackQuotePolicy();
         $requestPolicy = new BuybackRequestPolicy();
-        $requester = new RequestPrincipal(42, ['buyback.request']);
-        $manager = new RequestPrincipal(501, ['buyback.manage']);
-        $admin = new RequestPrincipal(601, ['buyback.admin']);
+        $requester = new RequestPrincipal(42, ['randulfthegrey-buyback.request']);
+        $manager = new RequestPrincipal(501, ['randulfthegrey-buyback.manage']);
+        $admin = new RequestPrincipal(601, ['randulfthegrey-buyback.admin']);
 
         self::assertTrue($quotePolicy->submit($requester, $request->quote));
-        self::assertFalse($quotePolicy->submit(new RequestPrincipal(43, ['buyback.request']), $request->quote));
+        self::assertFalse($quotePolicy->submit(new RequestPrincipal(43, ['randulfthegrey-buyback.request']), $request->quote));
         self::assertTrue($requestPolicy->cancel($requester, $request));
         self::assertTrue($requestPolicy->updateRequesterContract($requester, $request));
         self::assertTrue($requestPolicy->updateRequesterNote($requester, $request));
@@ -396,7 +396,7 @@ final class BuybackRequestLifecycleTest extends TestCase
         self::assertFalse($requestPolicy->reject($admin, $request));
         self::assertFalse($requestPolicy->viewAsManager($admin, $request));
         self::assertTrue($requestPolicy->complete(
-            new RequestPrincipal(701, ['buyback.request', 'buyback.manage']),
+            new RequestPrincipal(701, ['randulfthegrey-buyback.request', 'randulfthegrey-buyback.manage']),
             $request,
         ));
 
@@ -413,14 +413,14 @@ final class BuybackRequestLifecycleTest extends TestCase
     {
         $routes = $this->app['router']->getRoutes();
         $expectations = [
-            'buyback.quotes.submit' => [['POST'], 'can:buyback.request'],
-            'buyback.requests.contract.update' => [['PATCH'], 'can:buyback.request'],
-            'buyback.requests.requester-note.update' => [['PATCH'], 'can:buyback.request'],
-            'buyback.requests.cancel' => [['POST'], 'can:buyback.request'],
-            'buyback.manage.requests.contract.update' => [['PATCH'], 'can:buyback.manage'],
-            'buyback.manage.requests.manager-note.update' => [['PATCH'], 'can:buyback.manage'],
-            'buyback.manage.requests.complete' => [['POST'], 'can:buyback.manage'],
-            'buyback.manage.requests.reject' => [['POST'], 'can:buyback.manage'],
+            'buyback.quotes.submit' => [['POST'], 'can:randulfthegrey-buyback.request'],
+            'buyback.requests.contract.update' => [['PATCH'], 'can:randulfthegrey-buyback.request'],
+            'buyback.requests.requester-note.update' => [['PATCH'], 'can:randulfthegrey-buyback.request'],
+            'buyback.requests.cancel' => [['POST'], 'can:randulfthegrey-buyback.request'],
+            'buyback.manage.requests.contract.update' => [['PATCH'], 'can:randulfthegrey-buyback.manage'],
+            'buyback.manage.requests.manager-note.update' => [['PATCH'], 'can:randulfthegrey-buyback.manage'],
+            'buyback.manage.requests.complete' => [['POST'], 'can:randulfthegrey-buyback.manage'],
+            'buyback.manage.requests.reject' => [['POST'], 'can:randulfthegrey-buyback.manage'],
         ];
 
         foreach ($expectations as $name => [$methods, $permission]) {
@@ -434,19 +434,19 @@ final class BuybackRequestLifecycleTest extends TestCase
     public function test_http_boundary_applies_resource_policies_and_serializes_string_contract_ids(): void
     {
         config()->set('app.key', 'base64:' . base64_encode(str_repeat('k', 32)));
-        Gate::define('buyback.request', static fn (RequestHttpUser $user): bool =>
-            in_array('buyback.request', $user->permissions, true));
-        Gate::define('buyback.manage', static fn (RequestHttpUser $user): bool =>
-            in_array('buyback.manage', $user->permissions, true));
-        Gate::define('buyback.admin', static fn (RequestHttpUser $user): bool =>
-            in_array('buyback.admin', $user->permissions, true));
+        Gate::define('randulfthegrey-buyback.request', static fn (RequestHttpUser $user): bool =>
+            in_array('randulfthegrey-buyback.request', $user->permissions, true));
+        Gate::define('randulfthegrey-buyback.manage', static fn (RequestHttpUser $user): bool =>
+            in_array('randulfthegrey-buyback.manage', $user->permissions, true));
+        Gate::define('randulfthegrey-buyback.admin', static fn (RequestHttpUser $user): bool =>
+            in_array('randulfthegrey-buyback.admin', $user->permissions, true));
         $quote = $this->quote();
 
-        $this->actingAs(new RequestHttpUser(43, ['buyback.request']))
+        $this->actingAs(new RequestHttpUser(43, ['randulfthegrey-buyback.request']))
             ->postJson(route('buyback.quotes.submit', $quote), [])
             ->assertForbidden();
 
-        $response = $this->actingAs(new RequestHttpUser(42, ['buyback.request']))
+        $response = $this->actingAs(new RequestHttpUser(42, ['randulfthegrey-buyback.request']))
             ->postJson(route('buyback.quotes.submit', $quote), [
                 'eve_contract_id' => '123456',
                 'requester_note' => 'Requester note',
@@ -458,17 +458,17 @@ final class BuybackRequestLifecycleTest extends TestCase
             ->where('public_id', $response->json('request.public_id'))
             ->firstOrFail();
 
-        $this->actingAs(new RequestHttpUser(42, ['buyback.request']))
+        $this->actingAs(new RequestHttpUser(42, ['randulfthegrey-buyback.request']))
             ->patchJson(route('buyback.manage.requests.manager-note.update', $buybackRequest), [
                 'manager_note' => 'Should not be accepted',
             ])
             ->assertForbidden();
 
-        $this->actingAs(new RequestHttpUser(601, ['buyback.admin']))
+        $this->actingAs(new RequestHttpUser(601, ['randulfthegrey-buyback.admin']))
             ->postJson(route('buyback.manage.requests.complete', $buybackRequest))
             ->assertForbidden();
 
-        $this->actingAs(new RequestHttpUser(501, ['buyback.manage']))
+        $this->actingAs(new RequestHttpUser(501, ['randulfthegrey-buyback.manage']))
             ->patchJson(route('buyback.manage.requests.manager-note.update', $buybackRequest), [
                 'manager_note' => 'Internal manager note',
             ])

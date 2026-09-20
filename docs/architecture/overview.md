@@ -70,7 +70,7 @@ Quote creation atomically persists only `PRICED` lines and the snapshots needed 
 
 ## High-level flow
 
-1. A user with `buyback.request` selects an enabled Program and submits inventory text.
+1. A user with `randulfthegrey-buyback.request` selects an enabled Program and submits inventory text.
 2. The synchronous appraisal pipeline resolves, evaluates, prices, and caches a trusted `AppraisalResult`.
 3. The UI displays priced and non-payable outcomes without accepting client-calculated money.
 4. The user exchanges the opaque token for an immutable Quote. The Program must still be enabled.
@@ -93,11 +93,18 @@ Internal relationships use plugin foreign keys. References to SeAT users/SDE row
 
 SeAT-native permissions are independent:
 
-- `buyback.request` covers appraisals and the requester's own Quotes and Requests;
-- `buyback.manage` covers all submitted Requests and manager actions;
-- `buyback.admin` covers Program, rule, price-reference, and reference-data administration.
+- `randulfthegrey-buyback.request` covers appraisals and the requester's own Quotes and Requests;
+- `randulfthegrey-buyback.manage` covers all submitted Requests and manager actions;
+- `randulfthegrey-buyback.admin` covers Program, rule, price-reference, and reference-data administration.
 
-No permission implies another. Policies/resource authorization and query scoping enforce ownership and role boundaries. Mutations use normal POST, PATCH, or DELETE routes with CSRF protection; no GET route changes state.
+The vendor-prefixed scope avoids collision in SeAT's global Gate namespace. No
+permission implies another. Policies/resource authorization and query scoping
+enforce ownership and role boundaries. Mutations use normal POST, PATCH, or
+DELETE routes with CSRF protection; no GET route changes state. The RC4 data
+change does not mutate previous `buyback.*` ACL rows because those globally
+named records may belong to another plugin and carry no ownership provenance.
+Operators manually grant the new permissions; the package registers no legacy
+aliases.
 
 ## Operational behavior
 

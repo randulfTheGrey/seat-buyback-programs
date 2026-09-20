@@ -47,7 +47,8 @@ This matrix maps approved invariants to mandatory regression behavior. Test orga
 | Quote submission is idempotent | Concurrent/repeated submissions return one Request for the Quote and never duplicate it. | [ADR 0009](../adr/0009-separate-quote-and-request-lifecycles.md) |
 | Appraisal token ownership and validity | Another user cannot consume the token; retry returns the same Quote; creation never extends the pricing-completion deadline. | [ADR 0008](../adr/0008-transient-server-side-appraisals.md) |
 | Cancellation/completion race | Concurrent requester cancellation and manager completion yield exactly one terminal state; the loser receives `REQUEST_NOT_PENDING`. | [Workflows](workflows-and-lifecycle.md), [ADR 0009](../adr/0009-separate-quote-and-request-lifecycles.md) |
-| Permission independence | A principal with only `buyback.admin` cannot view manager-only data or complete/reject a Request. | [ADR 0010](../adr/0010-seat-native-permissions.md) |
+| Permission independence | A principal with only `randulfthegrey-buyback.admin` cannot view manager-only data or complete/reject a Request. | [ADR 0010](../adr/0010-seat-native-permissions.md) |
+| Permission namespace isolation | Only vendor-prefixed permissions are registered and enforced; legacy `buyback.*` ACL records remain untouched because another plugin may own them. | [ADR 0010](../adr/0010-seat-native-permissions.md) |
 | Requester query isolation | Requester DataTables, pages, and direct resource routes cannot expose another user's Quote or Request. | [Workflows](workflows-and-lifecycle.md), [ADR 0010](../adr/0010-seat-native-permissions.md) |
 | Failed SDE refresh preserves active data | Invalid/failed candidate import leaves the complete last-known-good mapping active and reports degraded health. | [Pricing](pricing-and-reference-data.md), [ADR 0006](../adr/0006-sde-backed-compression-classification.md) |
 | Missing versus stale compression data | Missing initial data blocks only a Program using compression-qualified rules; stale valid data remains usable with an admin warning. | [ADR 0006](../adr/0006-sde-backed-compression-classification.md) |
@@ -126,7 +127,7 @@ The order below is the approved planning order. Separate implementation issues m
 ### 9. Requester UI
 
 - **Purpose/scope:** Deliver the Program -> Paste -> Appraisal -> Quote -> Request journey and requester-owned history using Blade/AdminLTE/DataTables.
-- **Dependencies:** Slices 6-8 and `buyback.request` authorization.
+- **Dependencies:** Slices 6-8 and `randulfthegrey-buyback.request` authorization.
 - **Governing decisions:** [Workflows and Lifecycle](workflows-and-lifecycle.md), [ADR 0007](../adr/0007-immutable-payable-only-quotes.md), [ADR 0008](../adr/0008-transient-server-side-appraisals.md), and [ADR 0010](../adr/0010-seat-native-permissions.md).
 - **Acceptance criteria:** Every appraisal status is understandable; payable Quote contents are explicit; retry means full re-appraisal; “My Buybacks” focuses on submitted Requests; requester pending edits/cancellation are available; manager-only data is absent; and no GET changes state.
 - **Required regression tests:** End-to-end requester happy/error paths, mixed appraisal rendering, expired appraisal/Quote recovery, ownership isolation in pages/DataTables/direct URLs, CSRF/method enforcement, and manager-note non-disclosure.
@@ -134,7 +135,7 @@ The order below is the approved planning order. Separate implementation issues m
 ### 10. Admin UI
 
 - **Purpose/scope:** Deliver Program, logical reference, sparse Rule, effective-preview, and reference-data health administration.
-- **Dependencies:** Slices 2-5 and `buyback.admin` authorization.
+- **Dependencies:** Slices 2-5 and `randulfthegrey-buyback.admin` authorization.
 - **Governing decisions:** [Rule Engine](rule-engine.md), [Pricing and Reference Data](pricing-and-reference-data.md), [ADR 0003](../adr/0003-sparse-hierarchical-rule-engine.md), [ADR 0005](../adr/0005-logical-buy-sell-split-reference-channels.md), [ADR 0006](../adr/0006-sde-backed-compression-classification.md), and [ADR 0010](../adr/0010-seat-native-permissions.md).
 - **Acceptance criteria:** UI sections/wording match the approved workflow; provider instances remain opaque; SPLIT strategy is explicit; SDE selectors require no numeric IDs; modifier semantics say percentage points; no-op/invalid rules are blocked; preview uses production evaluation; and health is separate from stored validity.
 - **Required regression tests:** Program defaults/status, every control mapping, searchable selector authorization, duplicate/no-op validation, preview parity, provider drift warnings, compression health/sync behavior, and admin-without-manage denial.
@@ -142,7 +143,7 @@ The order below is the approved planning order. Separate implementation issues m
 ### 11. Manager UI and authorization hardening
 
 - **Purpose/scope:** Deliver manager-wide submitted-Request operations and harden all collection/resource authorization boundaries.
-- **Dependencies:** Slices 8-10 and `buyback.manage` registration.
+- **Dependencies:** Slices 8-10 and `randulfthegrey-buyback.manage` registration.
 - **Governing decisions:** [Workflows and Lifecycle](workflows-and-lifecycle.md) and [ADR 0010](../adr/0010-seat-native-permissions.md).
 - **Acceptance criteria:** Managers can view/manage all submitted Requests and only approved fields/actions; requester/admin permissions imply nothing; requester/manager note visibility is exact; all queries and resources enforce scope; all mutations are CSRF-protected non-GET; and state races are normalized.
 - **Required regression tests:** Permission-combination matrix, requester DataTable isolation, direct-ID access, manager notes, contract correction, complete/reject validation, terminal read-only behavior, HTTP method/CSRF checks, and transition races.

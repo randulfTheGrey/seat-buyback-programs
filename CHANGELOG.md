@@ -6,8 +6,18 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-No unreleased changes are currently scheduled beyond release-candidate
-validation.
+### Changed
+
+- Vendor-prefix the three independent SeAT ACL identifiers as
+  `randulfthegrey-buyback.request`, `randulfthegrey-buyback.manage`, and
+  `randulfthegrey-buyback.admin` to avoid collisions with other plugins. This is
+  an intentional breaking identifier correction before stable `1.0.0`.
+- Leave legacy `buyback.*` ACL records and assignments untouched because SeAT
+  does not record which plugin owns a permission title. Existing RC deployments
+  must explicitly grant the corresponding new permissions to intended roles.
+- Document permission discovery, the fail-closed manual remapping procedure,
+  cache invalidation, and external automation updates for the targeted
+  `1.0.0-rc.4` release.
 
 ## [1.0.0-rc.3] - 2026-09-18
 

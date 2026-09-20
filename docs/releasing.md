@@ -19,7 +19,7 @@ Pre-stable RC behavior and migrations may evolve with responsible release notes.
 After stable release, breaking public changes require an appropriate major
 version.
 
-Use annotated tags in the form `v<version>`, for example `v1.0.0-rc.3`.
+Use annotated tags in the form `v<version>`, for example `v1.0.0-rc.4`.
 Composer normalizes the leading `v`, and the convention is compatible with
 common PHP/GitHub practice. Do not create or push the tag until the checklist is
 complete and publication is explicitly authorized.

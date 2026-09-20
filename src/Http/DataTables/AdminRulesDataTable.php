@@ -30,7 +30,7 @@ final class AdminRulesDataTable extends DataTable
 
     public function ajax(): JsonResponse
     {
-        abort_unless(request()->user()?->can('buyback.admin') === true, 403);
+        abort_unless(request()->user()?->can('randulfthegrey-buyback.admin') === true, 403);
 
         return datatables()->eloquent($this->query())
             ->addColumn('target', fn (BuybackRule $row): string => e($this->targets->for(
@@ -81,7 +81,7 @@ final class AdminRulesDataTable extends DataTable
 
     public function query(): Builder
     {
-        abort_unless(request()->user()?->can('buyback.admin') === true, 403);
+        abort_unless(request()->user()?->can('randulfthegrey-buyback.admin') === true, 403);
 
         $query = $this->program->rules()->getQuery();
 

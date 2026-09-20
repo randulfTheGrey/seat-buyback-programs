@@ -468,7 +468,7 @@ final class InventoryAppraisalServiceTest extends TestCase
         self::assertNotNull($route);
         self::assertSame(['POST'], $route->methods());
         self::assertSame(
-            ['web', 'auth', 'can:buyback.request'],
+            ['web', 'auth', 'can:randulfthegrey-buyback.request'],
             $route->gatherMiddleware(),
         );
     }

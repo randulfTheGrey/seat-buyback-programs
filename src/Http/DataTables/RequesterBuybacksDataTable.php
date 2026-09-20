@@ -14,7 +14,7 @@ final class RequesterBuybacksDataTable extends DataTable
 {
     public function ajax(): JsonResponse
     {
-        abort_unless(request()->user()?->can('buyback.request') === true, 403);
+        abort_unless(request()->user()?->can('randulfthegrey-buyback.request') === true, 403);
 
         return datatables()->eloquent($this->query())
             ->editColumn('submitted_at', static fn (BuybackRequest $row): string => sprintf(
@@ -55,7 +55,7 @@ final class RequesterBuybacksDataTable extends DataTable
 
     public function query(): Builder
     {
-        abort_unless(request()->user()?->can('buyback.request') === true, 403);
+        abort_unless(request()->user()?->can('randulfthegrey-buyback.request') === true, 403);
 
         $requesterUserId = (int) request()->user()->getAuthIdentifier();
         abort_unless($requesterUserId > 0, 403);

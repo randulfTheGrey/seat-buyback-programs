@@ -14,14 +14,14 @@ SeAT permissions.
 
 ## Release status
 
-The current candidate is **1.0.0-rc.3**, a focused regression-fix release in
-the public `1.0.0` validation line. Release candidates are intended for package,
-upgrade, and workflow validation before stable `1.0.0`.
+The current published candidate is **1.0.0-rc.3**. The next targeted candidate,
+**1.0.0-rc.4**, corrects the permission namespace before stable `1.0.0`.
+Release candidates are intended for package, upgrade, and workflow validation.
 
 Public source and release tags are hosted at
 [`randulfTheGrey/seat-buyback-programs`](https://github.com/randulfTheGrey/seat-buyback-programs),
-and published tags are available through Packagist. See the
-[RC3 release notes](docs/releases/1.0.0-rc.3.md) for this candidate's changes.
+and published tags are available through Packagist. See the prepared
+[RC4 release notes](docs/releases/1.0.0-rc.4.md) for the pending candidate.
 
 ## Compatibility
 
@@ -69,6 +69,14 @@ worker and scheduler running, then initialize compression data:
 php artisan buyback:sync-compression-data
 ```
 
+The standard SeAT plugin database seeder maintains SeAT plugin lifecycle data;
+it does not rename or synchronize these permissions. The package registers its
+definitions during discovery, SeAT materializes them through normal role
+management, and administrators grant them through normal SeAT roles. RC4 does
+not mutate legacy `buyback.*` ACL records because another plugin may own them;
+existing RC installations must follow the manual remapping procedure in the
+[upgrade guide](docs/upgrading.md).
+
 Next, configure one or more provider instances in `seat-prices-core`. Create
 BUY and SELL instances and, if desired, a dedicated SPLIT instance. In Buyback
 Administration, create a disabled Program, assign its references and policy,
@@ -99,12 +107,12 @@ modifiers, rules, Quotes, Requests, and a worked policy example.
 
 | Permission | Purpose |
 | --- | --- |
-| `buyback.request` | Create appraisals and manage the user's own Quotes and Requests. |
-| `buyback.manage` | View submitted Requests, update manager fields, and complete or reject pending Requests. |
-| `buyback.admin` | Configure Programs, references, rules, previews, and compression data. |
+| `randulfthegrey-buyback.request` | Create appraisals and manage the user's own Quotes and Requests. |
+| `randulfthegrey-buyback.manage` | View submitted Requests, update manager fields, and complete or reject pending Requests. |
+| `randulfthegrey-buyback.admin` | Configure Programs, references, rules, previews, and compression data. |
 
-Permissions are independent; `buyback.admin` does not imply `buyback.manage`,
-and `buyback.manage` does not imply `buyback.request`.
+Permissions are independent; `randulfthegrey-buyback.admin` does not imply `randulfthegrey-buyback.manage`,
+and `randulfthegrey-buyback.manage` does not imply `randulfthegrey-buyback.request`.
 
 ## Operations
 

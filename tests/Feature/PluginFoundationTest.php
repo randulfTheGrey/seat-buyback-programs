@@ -45,10 +45,11 @@ final class PluginFoundationTest extends TestCase
 
     public function test_exactly_three_independent_permissions_are_registered(): void
     {
-        $permissions = config('seat.permissions.buyback');
+        $permissions = config('seat.permissions.randulfthegrey-buyback');
 
         self::assertIsArray($permissions);
         self::assertSame(['request', 'manage', 'admin'], array_keys($permissions));
+        self::assertNull(config('seat.permissions.buyback'));
 
         foreach ($permissions as $permission) {
             self::assertSame(['label', 'description'], array_keys($permission));

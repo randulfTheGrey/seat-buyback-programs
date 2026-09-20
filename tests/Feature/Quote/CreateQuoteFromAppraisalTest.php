@@ -413,7 +413,7 @@ final class CreateQuoteFromAppraisalTest extends TestCase
 
         self::assertNotNull($route);
         self::assertSame(['POST'], $route->methods());
-        self::assertSame(['web', 'auth', 'can:buyback.request'], $route->gatherMiddleware());
+        self::assertSame(['web', 'auth', 'can:randulfthegrey-buyback.request'], $route->gatherMiddleware());
         self::assertSame(['appraisal_token'], array_keys((new CreateQuoteRequest())->rules()));
     }
 

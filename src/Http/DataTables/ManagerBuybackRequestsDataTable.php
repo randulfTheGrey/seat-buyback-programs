@@ -15,7 +15,7 @@ final class ManagerBuybackRequestsDataTable extends DataTable
 {
     public function ajax(): JsonResponse
     {
-        abort_unless(request()->user()?->can('buyback.manage') === true, 403);
+        abort_unless(request()->user()?->can('randulfthegrey-buyback.manage') === true, 403);
 
         return datatables()->eloquent($this->query())
             ->editColumn('public_id', static fn (BuybackRequest $row): string => sprintf(
@@ -61,7 +61,7 @@ final class ManagerBuybackRequestsDataTable extends DataTable
 
     public function query(): Builder
     {
-        abort_unless(request()->user()?->can('buyback.manage') === true, 403);
+        abort_unless(request()->user()?->can('randulfthegrey-buyback.manage') === true, 403);
 
         $query = BuybackRequest::query()
             ->select([

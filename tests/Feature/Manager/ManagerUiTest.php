@@ -36,7 +36,7 @@ final class ManagerUiTest extends TestCase
         CarbonImmutable::setTestNow('2026-09-12 12:00:00 UTC');
         View::addNamespace('web', dirname(__DIR__, 2) . '/Fixtures/views');
 
-        foreach (['buyback.request', 'buyback.manage', 'buyback.admin'] as $permission) {
+        foreach (['randulfthegrey-buyback.request', 'randulfthegrey-buyback.manage', 'randulfthegrey-buyback.admin'] as $permission) {
             Gate::define($permission, static fn (ManagerUiUser $user): bool =>
                 in_array($permission, $user->permissions, true));
         }
@@ -55,13 +55,13 @@ final class ManagerUiTest extends TestCase
         $completed = $this->request(42, $program, BuybackRequestStatus::COMPLETED, '2026-09-12 11:59:00');
         $pending = $this->request(43, $program, BuybackRequestStatus::PENDING, '2026-09-12 10:00:00');
 
-        foreach ([['buyback.request'], ['buyback.admin']] as $permissions) {
+        foreach ([['randulfthegrey-buyback.request'], ['randulfthegrey-buyback.admin']] as $permissions) {
             $this->actingAs($this->user(99, $permissions))
                 ->get(route('buyback.manage.requests.index'))
                 ->assertForbidden();
         }
 
-        $response = $this->actingAs($this->user(501, ['buyback.manage']))
+        $response = $this->actingAs($this->user(501, ['randulfthegrey-buyback.manage']))
             ->withHeaders($this->dataTableHeaders())
             ->get(route('buyback.manage.requests.index', $this->dataTableParams(length: 1)))
             ->assertOk();
@@ -82,7 +82,7 @@ final class ManagerUiTest extends TestCase
         $this->request(43, $ore, BuybackRequestStatus::REJECTED, '2026-09-12 08:00:00');
         $this->request(44, $mineral, submittedAt: '2026-09-11 08:00:00');
 
-        $response = $this->actingAs($this->user(501, ['buyback.manage']))
+        $response = $this->actingAs($this->user(501, ['randulfthegrey-buyback.manage']))
             ->withHeaders($this->dataTableHeaders())
             ->get(route('buyback.manage.requests.index', $this->dataTableParams() + [
                 'status' => 'PENDING',
@@ -103,7 +103,7 @@ final class ManagerUiTest extends TestCase
         $request = $this->request(42, $program, requesterNote: 'Requester-visible note', managerNote: 'Internal manager context');
         $program->update(['name' => 'Renamed after Quote']);
 
-        $response = $this->actingAs($this->user(501, ['buyback.manage']))
+        $response = $this->actingAs($this->user(501, ['randulfthegrey-buyback.manage']))
             ->get(route('buyback.manage.requests.show', $request))
             ->assertOk()
             ->assertSee('Historical Current Program Name')
@@ -134,7 +134,7 @@ final class ManagerUiTest extends TestCase
             managerNote: 'Manager-only secret',
         );
 
-        $response = $this->actingAs($this->user(42, ['buyback.request']))
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->withHeaders($this->dataTableHeaders())
             ->get(route('buyback.requests.index', $this->dataTableParams()))
             ->assertOk();
@@ -146,7 +146,7 @@ final class ManagerUiTest extends TestCase
             ->assertSee('Requester message')
             ->assertDontSee('Manager-only secret');
 
-        $this->actingAs($this->user(43, ['buyback.request']))
+        $this->actingAs($this->user(43, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.requests.show', $request))
             ->assertNotFound();
     }
@@ -161,7 +161,7 @@ final class ManagerUiTest extends TestCase
         ];
         $originalQuote = $request->quote->getRawOriginal();
         $originalItem = $request->quote->items()->firstOrFail()->getRawOriginal();
-        $manager = $this->user(501, ['buyback.manage']);
+        $manager = $this->user(501, ['randulfthegrey-buyback.manage']);
 
         $this->actingAs($manager)
             ->patch(route('buyback.manage.requests.contract.update', $request), ['eve_contract_id' => 987654321])
@@ -202,7 +202,7 @@ final class ManagerUiTest extends TestCase
     public function test_manager_rejection_requires_reason_and_requester_sees_reason_not_manager_note(): void
     {
         $request = $this->request(42, $this->program(), managerNote: 'Private investigation');
-        $manager = $this->user(501, ['buyback.manage']);
+        $manager = $this->user(501, ['randulfthegrey-buyback.manage']);
 
         $this->actingAs($manager)
             ->post(route('buyback.manage.requests.reject', $request), ['rejection_reason' => '   '])
@@ -217,7 +217,7 @@ final class ManagerUiTest extends TestCase
         self::assertSame(BuybackRequestStatus::REJECTED, $request->status);
         self::assertSame(501, $request->rejected_by_user_id);
 
-        $this->actingAs($this->user(42, ['buyback.request']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.requests.show', $request))
             ->assertOk()
             ->assertSee('The contract contents differ from the Quote.')
@@ -228,7 +228,7 @@ final class ManagerUiTest extends TestCase
     {
         $request = $this->request(42, $this->program(), BuybackRequestStatus::CANCELED);
 
-        $this->actingAs($this->user(501, ['buyback.manage']))
+        $this->actingAs($this->user(501, ['randulfthegrey-buyback.manage']))
             ->get(route('buyback.manage.requests.show', $request))
             ->assertOk()
             ->assertSee('Requester withdrawal')
@@ -262,13 +262,13 @@ final class ManagerUiTest extends TestCase
     /** @return iterable<string, array{list<string>, bool, bool, bool}> */
     public static function permissionMatrix(): iterable
     {
-        yield 'request only' => [['buyback.request'], true, false, false];
-        yield 'manage only' => [['buyback.manage'], false, true, false];
-        yield 'admin only' => [['buyback.admin'], false, false, true];
-        yield 'request + manage' => [['buyback.request', 'buyback.manage'], true, true, false];
-        yield 'manage + admin' => [['buyback.manage', 'buyback.admin'], false, true, true];
-        yield 'request + admin' => [['buyback.request', 'buyback.admin'], true, false, true];
-        yield 'all three' => [['buyback.request', 'buyback.manage', 'buyback.admin'], true, true, true];
+        yield 'request only' => [['randulfthegrey-buyback.request'], true, false, false];
+        yield 'manage only' => [['randulfthegrey-buyback.manage'], false, true, false];
+        yield 'admin only' => [['randulfthegrey-buyback.admin'], false, false, true];
+        yield 'request + manage' => [['randulfthegrey-buyback.request', 'randulfthegrey-buyback.manage'], true, true, false];
+        yield 'manage + admin' => [['randulfthegrey-buyback.manage', 'randulfthegrey-buyback.admin'], false, true, true];
+        yield 'request + admin' => [['randulfthegrey-buyback.request', 'randulfthegrey-buyback.admin'], true, false, true];
+        yield 'all three' => [['randulfthegrey-buyback.request', 'randulfthegrey-buyback.manage', 'randulfthegrey-buyback.admin'], true, true, true];
     }
 
     public function test_manager_routes_and_navigation_use_independent_permission_and_safe_http_methods(): void
@@ -287,13 +287,13 @@ final class ManagerUiTest extends TestCase
             $route = $routes->getByName($name);
             self::assertNotNull($route, $name);
             self::assertSame($methods, $route->methods(), $name);
-            self::assertSame(['web', 'auth', 'can:buyback.manage'], $route->gatherMiddleware(), $name);
+            self::assertSame(['web', 'auth', 'can:randulfthegrey-buyback.manage'], $route->gatherMiddleware(), $name);
         }
 
-        self::assertSame('buyback.manage', config('package.sidebar.buyback-management.permission'));
-        self::assertSame('buyback.manage', config('package.sidebar.buyback-management.entries.0.permission'));
+        self::assertSame('randulfthegrey-buyback.manage', config('package.sidebar.buyback-management.permission'));
+        self::assertSame('randulfthegrey-buyback.manage', config('package.sidebar.buyback-management.entries.0.permission'));
         self::assertSame('buyback-manage', config('package.sidebar.buyback-management.route_segment'));
-        self::assertSame('buyback.admin', config('package.sidebar.buyback-administration.permission'));
+        self::assertSame('randulfthegrey-buyback.admin', config('package.sidebar.buyback-administration.permission'));
 
         self::assertSame('buyback/requests', $routes->getByName('buyback.requests.index')?->uri());
         self::assertSame('buyback-manage/requests', $routes->getByName('buyback.manage.requests.index')?->uri());
@@ -311,7 +311,7 @@ final class ManagerUiTest extends TestCase
         ]);
         $this->app['router']->bind('buybackRequest', static fn (): BuybackRequest => $stale);
 
-        $this->actingAs($this->user(501, ['buyback.manage']))
+        $this->actingAs($this->user(501, ['randulfthegrey-buyback.manage']))
             ->postJson(route('buyback.manage.requests.complete', $request))
             ->assertConflict()
             ->assertJsonPath('error.code', 'REQUEST_NOT_PENDING')

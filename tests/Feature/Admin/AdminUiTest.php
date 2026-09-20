@@ -46,9 +46,9 @@ final class AdminUiTest extends TestCase
         config()->set('cache.default', 'array');
         View::addNamespace('web', dirname(__DIR__, 2) . '/Fixtures/views');
 
-        Gate::define('buyback.request', static fn (AdminUiUser $user): bool => in_array('buyback.request', $user->permissions, true));
-        Gate::define('buyback.manage', static fn (AdminUiUser $user): bool => in_array('buyback.manage', $user->permissions, true));
-        Gate::define('buyback.admin', static fn (AdminUiUser $user): bool => in_array('buyback.admin', $user->permissions, true));
+        Gate::define('randulfthegrey-buyback.request', static fn (AdminUiUser $user): bool => in_array('randulfthegrey-buyback.request', $user->permissions, true));
+        Gate::define('randulfthegrey-buyback.manage', static fn (AdminUiUser $user): bool => in_array('randulfthegrey-buyback.manage', $user->permissions, true));
+        Gate::define('randulfthegrey-buyback.admin', static fn (AdminUiUser $user): bool => in_array('randulfthegrey-buyback.admin', $user->permissions, true));
 
         Schema::create('price_provider_instances', function (Blueprint $table): void {
             $table->id();
@@ -73,18 +73,18 @@ final class AdminUiTest extends TestCase
 
     public function test_admin_routes_require_independent_admin_permission(): void
     {
-        foreach ([['buyback.request'], ['buyback.manage']] as $permissions) {
+        foreach ([['randulfthegrey-buyback.request'], ['randulfthegrey-buyback.manage']] as $permissions) {
             $this->actingAs($this->user(40, $permissions))
                 ->get(route('buyback.admin.programs.index'))
                 ->assertForbidden();
         }
 
-        $this->actingAs($this->user(41, ['buyback.admin']))
+        $this->actingAs($this->user(41, ['randulfthegrey-buyback.admin']))
             ->get(route('buyback.admin.programs.index'))
             ->assertOk()
             ->assertSee('New Program');
 
-        self::assertFalse(Gate::forUser($this->user(42, ['buyback.admin']))->allows('buyback.manage'));
+        self::assertFalse(Gate::forUser($this->user(42, ['randulfthegrey-buyback.admin']))->allows('randulfthegrey-buyback.manage'));
 
         $routes = $this->app['router']->getRoutes();
         self::assertSame('buyback/programs', $routes->getByName('buyback.programs.index')?->uri());
@@ -95,7 +95,7 @@ final class AdminUiTest extends TestCase
 
     public function test_program_editor_uses_responsive_two_column_cards_and_live_landing_preview(): void
     {
-        $response = $this->actingAs($this->user(42, ['buyback.admin']))
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->get(route('buyback.admin.programs.create'))
             ->assertOk()
             ->assertSee('Appraisals Landing Preview')
@@ -109,7 +109,7 @@ final class AdminUiTest extends TestCase
 
     public function test_program_creation_defaults_disabled_accepts_global_choice_and_translates_modifier_exactly(): void
     {
-        $this->actingAs($this->user(42, ['buyback.admin']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->post(route('buyback.admin.programs.store'), $this->programPayload([
                 'status' => null,
                 'default_acceptance' => 'REJECT',
@@ -137,7 +137,7 @@ final class AdminUiTest extends TestCase
     {
         $program = $this->program();
 
-        $this->actingAs($this->user(42, ['buyback.admin']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->patch(route('buyback.admin.programs.update', $program), $this->programPayload([
                 'status' => 'ENABLED',
             ]))
@@ -177,7 +177,7 @@ final class AdminUiTest extends TestCase
         self::assertTrue($health->configuration->valid());
         self::assertNotEmpty($health->runtimeErrors);
 
-        $this->actingAs($this->user(42, ['buyback.admin']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->patch(route('buyback.admin.programs.update', $program), $this->programPayload([
                 'name' => 'Renamed during provider drift',
                 'status' => 'ENABLED',
@@ -197,7 +197,7 @@ final class AdminUiTest extends TestCase
         $program->rules()->create($this->storedRule(['reference_mode_override' => 'SELL']));
 
         \RecursiveTree\Seat\PricesCore\Models\PriceProviderInstance::query()->whereKey($buy)->delete();
-        $this->actingAs($this->user(42, ['buyback.admin']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->patch(route('buyback.admin.programs.update', $program), $this->programPayload([
                 'status' => 'ENABLED',
                 'default_reference_mode' => 'SPLIT',
@@ -221,7 +221,7 @@ final class AdminUiTest extends TestCase
     public function test_rule_editor_supports_sparse_states_and_enforces_single_type_identity(): void
     {
         $program = $this->program();
-        $user = $this->user(42, ['buyback.admin']);
+        $user = $this->user(42, ['randulfthegrey-buyback.admin']);
 
         $this->actingAs($user)->post(route('buyback.admin.programs.rules.store', $program), $this->rulePayload())
             ->assertSessionHasErrors('acceptance');
@@ -333,7 +333,7 @@ final class AdminUiTest extends TestCase
                 'modifier_bps' => 500,
             ]),
         ]);
-        $this->actingAs($this->user(42, ['buyback.admin']));
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']));
         $typeRule = $this->rulePayload([
             'target_type' => 'TYPE',
             'target_id' => 34,
@@ -378,7 +378,7 @@ final class AdminUiTest extends TestCase
             'modifier_operation' => 'ADJUST',
             'modifier_bps' => -10000,
         ]));
-        $this->actingAs($this->user(42, ['buyback.admin']));
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']));
 
         $this->post(route('buyback.admin.programs.rules.store', $program), $this->rulePayload([
             'target_type' => 'TYPE',
@@ -410,7 +410,7 @@ final class AdminUiTest extends TestCase
     {
         $program = $this->program();
         $program->forceFill(['default_modifier_bps' => -1000])->save();
-        $this->actingAs($this->user(42, ['buyback.admin']));
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']));
         $createUrl = route('buyback.admin.programs.rules.create', $program);
 
         $response = $this->from($createUrl)->post(
@@ -444,7 +444,7 @@ final class AdminUiTest extends TestCase
             'modifier_operation' => 'ADJUST',
             'modifier_bps' => -10000,
         ]));
-        $this->actingAs($this->user(42, ['buyback.admin']));
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']));
         $editUrl = route('buyback.admin.programs.edit', $program);
 
         $this->from($editUrl)->patch(route('buyback.admin.programs.update', $program), $this->programPayload([
@@ -472,7 +472,7 @@ final class AdminUiTest extends TestCase
             'modifier_operation' => 'ADJUST',
             'modifier_bps' => -10000,
         ]));
-        $this->actingAs($this->user(42, ['buyback.admin']));
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']));
         $route = route('buyback.admin.programs.rules.update', [$program, $rule]);
 
         $this->patch($route, $this->rulePayload([
@@ -526,7 +526,7 @@ final class AdminUiTest extends TestCase
     {
         $program = $this->program();
 
-        $this->actingAs($this->user(42, ['buyback.admin']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->get(route('buyback.admin.programs.rules.create', $program))
             ->assertOk()
             ->assertSee('Target and lifecycle')
@@ -556,7 +556,7 @@ final class AdminUiTest extends TestCase
         ]);
         $this->usableCompressionData();
 
-        $response = $this->actingAs($this->user(42, ['buyback.admin']))
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->get(route('buyback.admin.preview.index', ['program_id' => $program->id, 'type_id' => 34]))
             ->assertOk()
             ->assertSee('Compressed Tritanium')
@@ -578,9 +578,9 @@ final class AdminUiTest extends TestCase
     public function test_sde_selectors_are_authorized_server_side_paginated_and_published_only(): void
     {
         $url = route('buyback.admin.selectors.types', ['q' => 'Trit']);
-        $this->actingAs($this->user(40, ['buyback.request']))->getJson($url)->assertForbidden();
+        $this->actingAs($this->user(40, ['randulfthegrey-buyback.request']))->getJson($url)->assertForbidden();
 
-        $response = $this->actingAs($this->user(42, ['buyback.admin']))->getJson($url)->assertOk();
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))->getJson($url)->assertOk();
         self::assertSame(34, $response->json('results.0.id'));
         self::assertStringContainsString('Mineral', $response->json('results.0.text'));
         self::assertNull($response->json('results.0.compression_applicable'));
@@ -625,10 +625,10 @@ final class AdminUiTest extends TestCase
             'target_id' => 18,
             'compression_qualifier' => 'ANY',
         ]);
-        $this->actingAs($this->user(40, ['buyback.request']))->getJson($url)->assertForbidden();
+        $this->actingAs($this->user(40, ['randulfthegrey-buyback.request']))->getJson($url)->assertForbidden();
 
         $this->usableCompressionData();
-        $response = $this->actingAs($this->user(42, ['buyback.admin']))
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->getJson($url)
             ->assertOk()
             ->assertJsonPath('compression_applicable', true)
@@ -691,7 +691,7 @@ final class AdminUiTest extends TestCase
         $headers = ['X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'application/json'];
         $params = ['draw' => 1, 'start' => 0, 'length' => 10, 'columns' => []];
 
-        $programs = $this->actingAs($this->user(42, ['buyback.admin']))
+        $programs = $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->withHeaders($headers)
             ->get(route('buyback.admin.programs.index', $params))
             ->assertOk();
@@ -715,7 +715,7 @@ final class AdminUiTest extends TestCase
     {
         Queue::fake();
         $this->usableCompressionData();
-        $admin = $this->user(42, ['buyback.admin']);
+        $admin = $this->user(42, ['randulfthegrey-buyback.admin']);
 
         $this->actingAs($admin)->get(route('buyback.admin.reference-data.index'))
             ->assertOk()
@@ -723,7 +723,7 @@ final class AdminUiTest extends TestCase
             ->assertSee('CCP Static Data Export')
             ->assertSee('1');
 
-        $this->actingAs($this->user(43, ['buyback.request']))
+        $this->actingAs($this->user(43, ['randulfthegrey-buyback.request']))
             ->post(route('buyback.admin.reference-data.sync'))
             ->assertForbidden();
 
@@ -744,7 +744,7 @@ final class AdminUiTest extends TestCase
     {
         $this->usableCompressionData('Safe normalized failure');
 
-        $this->actingAs($this->user(42, ['buyback.admin']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->get(route('buyback.admin.reference-data.index'))
             ->assertOk()
             ->assertSee('STALE')
@@ -755,7 +755,7 @@ final class AdminUiTest extends TestCase
 
     public function test_missing_reference_data_renders_missing_health(): void
     {
-        $this->actingAs($this->user(42, ['buyback.admin']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->get(route('buyback.admin.reference-data.index'))
             ->assertOk()
             ->assertSee('MISSING')
@@ -767,7 +767,7 @@ final class AdminUiTest extends TestCase
         $program = $this->program();
         $rule = $program->rules()->create($this->storedRule(['acceptance' => 'REJECT']));
 
-        $this->actingAs($this->user(42, ['buyback.admin']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->get(route('buyback.admin.reference-data.sync'))
             ->assertMethodNotAllowed();
         $this->get(route('buyback.admin.programs.archive', $program))
@@ -796,7 +796,7 @@ final class AdminUiTest extends TestCase
             'appraisal_token_hash' => $quote->getRawOriginal('appraisal_token_hash'),
         ];
 
-        $this->actingAs($this->user(42, ['buyback.admin']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.admin']))
             ->patch(route('buyback.admin.programs.archive', $program))
             ->assertRedirect(route('buyback.admin.programs.index'))
             ->assertSessionHas('success', 'Program archived. Existing Quotes and Buyback Requests are unaffected.');
@@ -806,7 +806,7 @@ final class AdminUiTest extends TestCase
         self::assertSame($before['program_name_snapshot'], $historical->program_name_snapshot);
         self::assertSame($before['payable_total'], $historical->payable_total);
         self::assertSame($before['appraisal_token_hash'], $historical->getRawOriginal('appraisal_token_hash'));
-        $this->actingAs($this->user(77, ['buyback.request']))
+        $this->actingAs($this->user(77, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.programs.index'))
             ->assertOk()
             ->assertDontSee('Mineral Buyback');

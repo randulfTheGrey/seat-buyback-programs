@@ -47,12 +47,12 @@ final class RequesterUiTest extends TestCase
         CarbonImmutable::setTestNow('2026-09-11 12:00:00 UTC');
         View::addNamespace('web', dirname(__DIR__, 2) . '/Fixtures/views');
 
-        Gate::define('buyback.request', static fn (RequesterUiUser $user): bool =>
-            in_array('buyback.request', $user->permissions, true));
-        Gate::define('buyback.manage', static fn (RequesterUiUser $user): bool =>
-            in_array('buyback.manage', $user->permissions, true));
-        Gate::define('buyback.admin', static fn (RequesterUiUser $user): bool =>
-            in_array('buyback.admin', $user->permissions, true));
+        Gate::define('randulfthegrey-buyback.request', static fn (RequesterUiUser $user): bool =>
+            in_array('randulfthegrey-buyback.request', $user->permissions, true));
+        Gate::define('randulfthegrey-buyback.manage', static fn (RequesterUiUser $user): bool =>
+            in_array('randulfthegrey-buyback.manage', $user->permissions, true));
+        Gate::define('randulfthegrey-buyback.admin', static fn (RequesterUiUser $user): bool =>
+            in_array('randulfthegrey-buyback.admin', $user->permissions, true));
     }
 
     protected function tearDown(): void
@@ -68,7 +68,7 @@ final class RequesterUiTest extends TestCase
         $disabled = $this->program('Hidden disabled Program', ProgramStatus::DISABLED);
         $this->program('Hidden archived Program', ProgramStatus::ARCHIVED);
 
-        $this->actingAs($this->user(42, ['buyback.request']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.programs.index'))
             ->assertOk()
             ->assertSee('Visible enabled Program')
@@ -82,11 +82,11 @@ final class RequesterUiTest extends TestCase
         $this->get(route('buyback.appraisals.create', $disabled))
             ->assertNotFound();
 
-        $this->actingAs($this->user(43, ['buyback.manage']))
+        $this->actingAs($this->user(43, ['randulfthegrey-buyback.manage']))
             ->get(route('buyback.programs.index'))
             ->assertForbidden();
 
-        $this->actingAs($this->user(44, ['buyback.admin']))
+        $this->actingAs($this->user(44, ['randulfthegrey-buyback.admin']))
             ->get(route('buyback.programs.index'))
             ->assertForbidden();
     }
@@ -161,7 +161,7 @@ final class RequesterUiTest extends TestCase
             ],
         ]);
 
-        $response = $this->actingAs($this->user(42, ['buyback.request']))
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->post(route('buyback.appraisals.store', $program), [
                 'inventory' => 'Tritanium 2',
                 'final_unit_price' => '999999.99',
@@ -217,11 +217,11 @@ final class RequesterUiTest extends TestCase
     {
         $quote = $this->quote(42, ProgramStatus::ARCHIVED);
 
-        $this->actingAs($this->user(43, ['buyback.request']))
+        $this->actingAs($this->user(43, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.quotes.show', $quote))
             ->assertNotFound();
 
-        $this->actingAs($this->user(42, ['buyback.request']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.quotes.show', $quote))
             ->assertOk()
             ->assertSee('Available')
@@ -231,7 +231,7 @@ final class RequesterUiTest extends TestCase
             ->assertDontSee('EXCLUDED');
 
         $quote = $this->quote(42, ProgramStatus::ENABLED, '2026-09-11 12:00:00');
-        $this->actingAs($this->user(42, ['buyback.request']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.quotes.show', $quote))
             ->assertOk()
             ->assertSee('This Quote has expired')
@@ -241,7 +241,7 @@ final class RequesterUiTest extends TestCase
     public function test_valid_quote_submits_after_program_disable_and_duplicate_post_reuses_request(): void
     {
         $quote = $this->quote(42, ProgramStatus::DISABLED);
-        $user = $this->user(42, ['buyback.request']);
+        $user = $this->user(42, ['randulfthegrey-buyback.request']);
 
         $first = $this->actingAs($user)->post(route('buyback.quotes.submit', $quote), [
             'eve_contract_id' => '987654321',
@@ -267,14 +267,14 @@ final class RequesterUiTest extends TestCase
         $own = $this->request(42);
         $other = $this->request(43);
 
-        $this->actingAs($this->user(501, ['buyback.manage']))
+        $this->actingAs($this->user(501, ['randulfthegrey-buyback.manage']))
             ->get(route('buyback.requests.index'))
             ->assertForbidden();
-        $this->actingAs($this->user(601, ['buyback.admin']))
+        $this->actingAs($this->user(601, ['randulfthegrey-buyback.admin']))
             ->get(route('buyback.requests.index'))
             ->assertForbidden();
 
-        $response = $this->actingAs($this->user(42, ['buyback.request']))
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->withHeaders(['X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'application/json'])
             ->get(route('buyback.requests.index', [
                 'draw' => 1,
@@ -290,7 +290,7 @@ final class RequesterUiTest extends TestCase
 
     public function test_my_buybacks_page_renders_the_server_side_datatable(): void
     {
-        $this->actingAs($this->user(42, ['buyback.request']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.requests.index'))
             ->assertOk()
             ->assertSee('submitted Buyback Requests')
@@ -306,7 +306,7 @@ final class RequesterUiTest extends TestCase
         $expired = $this->quote(42, expiresAt: '2026-09-11 12:00:00');
         $submitted = $this->request(42);
 
-        $response = $this->actingAs($this->user(42, ['buyback.request']))
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.requests.index'))
             ->assertOk()
             ->assertSee('Available Quotes')
@@ -330,7 +330,7 @@ final class RequesterUiTest extends TestCase
         $this->request(42);
         $this->quote(43);
 
-        $this->actingAs($this->user(42, ['buyback.request']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.requests.index'))
             ->assertOk()
             ->assertDontSee('Available Quotes')
@@ -341,11 +341,11 @@ final class RequesterUiTest extends TestCase
     {
         $buybackRequest = $this->request(42, 'Requester-visible note', 'Manager secret');
 
-        $this->actingAs($this->user(43, ['buyback.request']))
+        $this->actingAs($this->user(43, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.requests.show', $buybackRequest))
             ->assertNotFound();
 
-        $this->actingAs($this->user(42, ['buyback.request']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.requests.show', $buybackRequest))
             ->assertOk()
             ->assertSee('Requester-visible note')
@@ -383,7 +383,7 @@ final class RequesterUiTest extends TestCase
             'rejected_by_user_id' => 99,
         ])->saveQuietly();
 
-        $this->actingAs($this->user(42, ['buyback.request']))
+        $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.requests.show', $buybackRequest))
             ->assertOk()
             ->assertSee('Contract item mismatch')
@@ -411,12 +411,12 @@ final class RequesterUiTest extends TestCase
             $route = $routes->getByName($name);
             self::assertNotNull($route, $name);
             self::assertSame($methods, $route->methods(), $name);
-            self::assertSame(['web', 'auth', 'can:buyback.request'], $route->gatherMiddleware(), $name);
+            self::assertSame(['web', 'auth', 'can:randulfthegrey-buyback.request'], $route->gatherMiddleware(), $name);
         }
 
-        self::assertSame('buyback.request', config('package.sidebar.buyback-programs.permission'));
+        self::assertSame('randulfthegrey-buyback.request', config('package.sidebar.buyback-programs.permission'));
         self::assertSame(
-            ['buyback.request', 'buyback.request'],
+            ['randulfthegrey-buyback.request', 'randulfthegrey-buyback.request'],
             array_column(config('package.sidebar.buyback-programs.entries'), 'permission'),
         );
     }

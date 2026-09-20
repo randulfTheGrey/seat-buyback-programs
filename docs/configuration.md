@@ -96,7 +96,11 @@ available in v1.
 
 ## Permissions
 
-`buyback.request`, `buyback.manage`, and `buyback.admin` correspond to requester,
+`randulfthegrey-buyback.request`, `randulfthegrey-buyback.manage`, and `randulfthegrey-buyback.admin` correspond to requester,
 manager, and configuration workflows. Permissions are independent;
-`buyback.admin` does not imply `buyback.manage`, and `buyback.manage` does not
-imply `buyback.request`.
+`randulfthegrey-buyback.admin` does not imply `randulfthegrey-buyback.manage`, and `randulfthegrey-buyback.manage` does not
+imply `randulfthegrey-buyback.request`. The vendor-prefixed scope prevents a
+generic `buyback` scope from colliding with another SeAT plugin. This package
+does not register a legacy permission alias. Existing RC installations must
+grant the new permissions manually because legacy ACL records may belong to
+another plugin and are deliberately left untouched.
