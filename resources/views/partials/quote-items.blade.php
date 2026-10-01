@@ -7,12 +7,12 @@
     @foreach($items as $item)
       <tr>
         <td>{{ $item->type_name }}</td>
-        <td class="text-right">{{ number_format($item->quantity) }}</td>
+        <td class="text-right text-reset">{{ number_format($item->quantity) }}</td>
         <td>{{ $item->reference_mode->value }}</td>
-        <td class="text-right">{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($item->reference_unit_price) }} ISK</td>
+        <td class="text-right text-reset">{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($item->reference_unit_price) }} ISK</td>
         <td>{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::modifier($item->effective_modifier_bps->value) }}</td>
-        <td class="text-right">{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($item->final_unit_price) }} ISK</td>
-        <td class="text-right"><strong>{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($item->line_total) }} ISK</strong></td>
+        <td class="text-right text-reset">{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($item->final_unit_price) }} ISK</td>
+        <td class="text-right text-reset"><strong>{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($item->line_total) }} ISK</strong></td>
         <td>
           <details>
             <summary class="text-primary">Why this price?</summary>

@@ -92,6 +92,10 @@
                     "PKSA-mdq4-51ck-6kdq": {
                         "on-audit": false,
                         "reason": "Duplicate CVE record for PKSA-3r5d-mb8f-1qw9; retained in audits. See ADR 0013."
+                    },
+                    "PKSA-d5tc-s1qs-h781": {
+                        "on-audit": false,
+                        "reason": "SeAT 5 requires Laravel 10; this low-severity XSS requires APP_DEBUG=true, which production deployments must disable. See ADR 0013."
                     }
                 }
             }

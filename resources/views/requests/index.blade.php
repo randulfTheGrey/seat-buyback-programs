@@ -2,23 +2,23 @@
 
 @section('title', 'My Buybacks')
 @section('page_header', 'My Buybacks')
-@section('page_description', 'Available Quotes and Submitted Buyback Requests')
+@section('page_description', 'Unsubmitted Quotes and Buyback Request history')
 
 @section('full')
-  @if($availableQuotes->isNotEmpty())
-    <div class="card card-outline card-info">
-      <div class="card-header">
-        <h3 class="card-title">Available Quotes</h3>
-      </div>
-      <div class="card-body p-0">
-        <p class="text-muted px-3 pt-3">
-          These unexpired Quotes have not been submitted. Continue a Quote to review it and submit your Buyback Request.
-        </p>
+  <div class="card card-outline card-info">
+    <div class="card-header">
+      <h3 class="card-title">Unsubmitted Quotes</h3>
+    </div>
+    <div class="card-body p-0">
+      <p class="text-muted px-3 pt-3">
+        These Quotes are saved and still valid, but they have not been submitted as Buyback Requests.<br>
+        <strong>Create a Buyback Request before creating your EVE contract.</strong>
+      </p>
+      @if($availableQuotes->isNotEmpty())
         <div class="table-responsive">
           <table class="table table-striped mb-0">
             <thead>
               <tr>
-                <th>Quote reference</th>
                 <th>Program</th>
                 <th class="text-right">Payable amount</th>
                 <th>Expires</th>
@@ -28,23 +28,26 @@
             <tbody>
               @foreach($availableQuotes as $quote)
                 <tr>
-                  <td><code>{{ $quote->public_id }}</code></td>
                   <td>{{ $quote->program_name_snapshot }}</td>
                   <td class="text-right">{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($quote->payable_total) }} ISK</td>
                   <td><time datetime="{{ $quote->expires_at->toIso8601String() }}">{{ $quote->expires_at->format('Y-m-d H:i:s T') }}</time></td>
                   <td class="text-right">
-                    <a class="btn btn-sm btn-primary" href="{{ route('buyback.quotes.show', $quote) }}">
-                      Continue <i class="fas fa-arrow-right ml-1" aria-hidden="true"></i>
-                    </a>
+                    <form class="d-inline" method="post" action="{{ route('buyback.quotes.submit', $quote) }}">
+                      @csrf
+                      <button class="btn btn-sm btn-success" type="submit">Create Buyback Request</button>
+                    </form>
+                    <a class="btn btn-sm btn-outline-secondary ml-1" href="{{ route('buyback.quotes.show', $quote) }}">View Quote</a>
                   </td>
                 </tr>
               @endforeach
             </tbody>
           </table>
         </div>
-      </div>
+      @else
+        <p class="px-3 pb-3 mb-0">You have no unsubmitted Quotes.</p>
+      @endif
     </div>
-  @endif
+  </div>
 
   <div class="card">
     <div class="card-body">

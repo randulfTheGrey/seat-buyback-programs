@@ -20,6 +20,13 @@ The package depends directly on `eveseat/services`, `eveseat/eveapi`, and
 versions with `--ignore-platform-reqs` or `--with-all-dependencies` without
 reviewing the resulting SeAT upgrade.
 
+SeAT 5 currently requires the end-of-life Laravel 10 line. Production
+deployments must set `APP_DEBUG=false` and must not expose Laravel debug
+exception pages. Non-production debug environments must be access-controlled
+and unavailable to untrusted users. The reviewed compatibility policy and its
+focused Composer exceptions are documented in
+[ADR 0013](adr/0013-accept-laravel-10-for-seat-5-with-focused-security-exceptions.md).
+
 ## Composer installation
 
 Back up the application database and Composer files. From the SeAT root, run as
@@ -108,8 +115,10 @@ assigning each provider instance to the intended logical role.
 6. Review Program health and the effective-rule preview.
 7. Enable the Program after pricing references and required compression data are
    healthy.
-8. With a separate `randulfthegrey-buyback.request` grant, perform an appraisal/Quote/Request
-   smoke test; use `randulfthegrey-buyback.manage` to validate fulfillment.
+8. With a separate `randulfthegrey-buyback.request` grant, verify both appraisal
+   choices: **Save Quote** leaves an Unsubmitted Quote, while **Create Buyback
+   Request** opens Request contract instructions and exposes the Request
+   reference. Use `randulfthegrey-buyback.manage` to validate fulfillment.
 
 See [configuration.md](configuration.md) for policy semantics and
 [operations.md](operations.md) for health and troubleshooting.

@@ -404,6 +404,8 @@ final class BuybackRequestLifecycleTest extends TestCase
         $requesterData = (new RequesterBuybackRequestResource($request))->resolve($httpRequest);
         $managerData = (new ManagerBuybackRequestResource($request))->resolve($httpRequest);
         self::assertArrayNotHasKey('manager_note', $requesterData);
+        self::assertArrayNotHasKey('quote_public_id', $requesterData);
+        self::assertArrayNotHasKey('quote_public_id', $managerData);
         self::assertArrayNotHasKey('manager_note', $request->toArray());
         self::assertSame('Manager secret', $managerData['manager_note']);
         self::assertSame('30.03', $requesterData['payable_total']);

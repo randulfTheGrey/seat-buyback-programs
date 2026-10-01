@@ -25,8 +25,7 @@
     </div>
     <div class="card-body">
       <dl class="row mb-0">
-        <dt class="col-sm-3">Request reference</dt><dd class="col-sm-9"><code>{{ $buybackRequest->public_id }}</code></dd>
-        <dt class="col-sm-3">Quote reference</dt><dd class="col-sm-9"><code>{{ $quote->public_id }}</code></dd>
+        <dt class="col-sm-3">Buyback Request</dt><dd class="col-sm-9"><code>{{ $buybackRequest->public_id }}</code></dd>
         <dt class="col-sm-3">Requester</dt><dd class="col-sm-9">{{ $quote->requester_name_snapshot }} <span class="text-muted">(user #{{ $quote->requester_user_id }})</span></dd>
         <dt class="col-sm-3">Program</dt><dd class="col-sm-9">{{ $quote->program_name_snapshot }} <span class="text-muted">(historical Quote snapshot)</span></dd>
         <dt class="col-sm-3">Submitted</dt><dd class="col-sm-9"><time datetime="{{ $buybackRequest->submitted_at->toIso8601String() }}">{{ $buybackRequest->submitted_at->format('Y-m-d H:i:s T') }}</time></dd>
@@ -49,10 +48,10 @@
 
   @if($buybackRequest->isPending())
     <div class="row">
-      <div class="col-lg-6">
-        <div class="card">
+      <div class="col-lg-6 d-flex">
+        <div class="card flex-fill">
           <div class="card-header"><h3 class="card-title">Manual contract reference</h3></div>
-          <form method="post" action="{{ route('buyback.manage.requests.contract.update', $buybackRequest) }}">
+          <form class="d-flex flex-column flex-fill" method="post" action="{{ route('buyback.manage.requests.contract.update', $buybackRequest) }}">
             @csrf
             @method('PATCH')
             <div class="card-body">
@@ -64,10 +63,10 @@
           </form>
         </div>
       </div>
-      <div class="col-lg-6">
-        <div class="card">
+      <div class="col-lg-6 d-flex">
+        <div class="card flex-fill">
           <div class="card-header"><h3 class="card-title">Internal manager note</h3></div>
-          <form method="post" action="{{ route('buyback.manage.requests.manager-note.update', $buybackRequest) }}">
+          <form class="d-flex flex-column flex-fill" method="post" action="{{ route('buyback.manage.requests.manager-note.update', $buybackRequest) }}">
             @csrf
             @method('PATCH')
             <div class="card-body">
@@ -81,8 +80,8 @@
     </div>
 
     <div class="row">
-      <div class="col-lg-5">
-        <div class="card card-outline card-success">
+      <div class="col-lg-5 d-flex">
+        <div class="card card-outline card-success flex-fill">
           <div class="card-header"><h3 class="card-title">Complete Request</h3></div>
           <div class="card-body">
             @if($buybackRequest->eve_contract_id === null)
@@ -91,24 +90,24 @@
             <p>Mark the full immutable Quote obligation as completed. Partial completion and payout overrides are not available.</p>
           </div>
           <div class="card-footer text-right">
-            <form method="post" action="{{ route('buyback.manage.requests.complete', $buybackRequest) }}" onsubmit="return window.confirm('Mark this Buyback Request completed? This cannot be undone.');">
+            <form method="post" action="{{ route('buyback.manage.requests.complete', $buybackRequest) }}">
               @csrf
-              <button class="btn btn-success" type="submit"><i class="fas fa-check" aria-hidden="true"></i> Complete Request</button>
+              <button class="btn btn-success confirmform" type="submit" data-seat-action="permanently mark this Buyback Request completed; this cannot be undone"><i class="fas fa-check" aria-hidden="true"></i> Complete Request</button>
             </form>
           </div>
         </div>
       </div>
-      <div class="col-lg-7">
-        <div class="card card-outline card-danger">
+      <div class="col-lg-7 d-flex">
+        <div class="card card-outline card-danger flex-fill">
           <div class="card-header"><h3 class="card-title">Reject Request</h3></div>
-          <form method="post" action="{{ route('buyback.manage.requests.reject', $buybackRequest) }}" onsubmit="return window.confirm('Reject this Buyback Request? This cannot be undone.');">
+          <form class="d-flex flex-column flex-fill" method="post" action="{{ route('buyback.manage.requests.reject', $buybackRequest) }}">
             @csrf
             <div class="card-body">
               <label for="rejection_reason">Requester-visible rejection reason</label>
               <textarea class="form-control" id="rejection_reason" name="rejection_reason" rows="3" maxlength="10000" required>{{ old('rejection_reason') }}</textarea>
               <small class="form-text text-muted">The requester will see this reason. It is separate from the internal manager note.</small>
             </div>
-            <div class="card-footer text-right"><button class="btn btn-danger" type="submit"><i class="fas fa-times" aria-hidden="true"></i> Reject Request</button></div>
+            <div class="card-footer text-right"><button class="btn btn-danger confirmform" type="submit" data-seat-action="permanently reject this Buyback Request; this cannot be undone"><i class="fas fa-times" aria-hidden="true"></i> Reject Request</button></div>
           </form>
         </div>
       </div>

@@ -104,8 +104,9 @@ does not inspect provider backend credentials or semantics.
 
 ### Expired Quote
 
-Quotes cannot be extended or refreshed. Start a complete new appraisal. Existing
-submitted Requests remain valid regardless of Program status.
+Unsubmitted Quotes cannot be extended or refreshed. Start a complete new
+appraisal. Saving a Quote alone never submits it for processing. Existing
+Buyback Requests remain valid regardless of Program status.
 
 ### Permissions missing
 

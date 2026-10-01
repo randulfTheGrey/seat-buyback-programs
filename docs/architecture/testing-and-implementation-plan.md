@@ -45,6 +45,8 @@ This matrix maps approved invariants to mandatory regression behavior. Test orga
 | Existing Request ignores later Program status | Pending Request edits/transitions and authorized historical views continue after Program disable/archive. | [Workflows](workflows-and-lifecycle.md) |
 | Expired Quote cannot submit | Submission at or after expiry creates no Request and requires full re-appraisal. | [Workflows](workflows-and-lifecycle.md) |
 | Quote submission is idempotent | Concurrent/repeated submissions return one Request for the Quote and never duplicate it. | [ADR 0009](../adr/0009-separate-quote-and-request-lifecycles.md) |
+| Appraisal action choices remain distinct | Save Quote creates/reuses one Quote and no Request; Create Buyback Request creates/reuses that Quote and its one Request. Every order and retry remains idempotent. | [Workflows](workflows-and-lifecycle.md), [ADR 0008](../adr/0008-transient-server-side-appraisals.md), [ADR 0009](../adr/0009-separate-quote-and-request-lifecycles.md) |
+| Partial one-click failure preserves Quote | When Request creation fails after Quote creation, the immutable Quote remains an Unsubmitted Quote and retry reuses it. | [Workflows](workflows-and-lifecycle.md) |
 | Appraisal token ownership and validity | Another user cannot consume the token; retry returns the same Quote; creation never extends the pricing-completion deadline. | [ADR 0008](../adr/0008-transient-server-side-appraisals.md) |
 | Cancellation/completion race | Concurrent requester cancellation and manager completion yield exactly one terminal state; the loser receives `REQUEST_NOT_PENDING`. | [Workflows](workflows-and-lifecycle.md), [ADR 0009](../adr/0009-separate-quote-and-request-lifecycles.md) |
 | Permission independence | A principal with only `randulfthegrey-buyback.admin` cannot view manager-only data or complete/reject a Request. | [ADR 0010](../adr/0010-seat-native-permissions.md) |
@@ -129,8 +131,8 @@ The order below is the approved planning order. Separate implementation issues m
 - **Purpose/scope:** Deliver the Program -> Paste -> Appraisal -> Quote -> Request journey and requester-owned history using Blade/AdminLTE/DataTables.
 - **Dependencies:** Slices 6-8 and `randulfthegrey-buyback.request` authorization.
 - **Governing decisions:** [Workflows and Lifecycle](workflows-and-lifecycle.md), [ADR 0007](../adr/0007-immutable-payable-only-quotes.md), [ADR 0008](../adr/0008-transient-server-side-appraisals.md), and [ADR 0010](../adr/0010-seat-native-permissions.md).
-- **Acceptance criteria:** Every appraisal status is understandable; payable Quote contents are explicit; retry means full re-appraisal; “My Buybacks” focuses on submitted Requests; requester pending edits/cancellation are available; manager-only data is absent; and no GET changes state.
-- **Required regression tests:** End-to-end requester happy/error paths, mixed appraisal rendering, expired appraisal/Quote recovery, ownership isolation in pages/DataTables/direct URLs, CSRF/method enforcement, and manager-note non-disclosure.
+- **Acceptance criteria:** Every appraisal status is understandable; payable Quote contents are explicit; Save Quote and Create Buyback Request have distinct semantics; My Buybacks separates Unsubmitted Quotes from Request history; the Request reference is the only ordinary contract reference; requester pending edits/cancellation are available; manager-only data is absent; and no GET changes state.
+- **Required regression tests:** End-to-end sibling-action happy/error paths, all action/retry orderings, partial Request-creation recovery, visible Quote-ID absence, Request-reference copy/contract guidance, mixed appraisal rendering, expired appraisal/Quote recovery, ownership isolation in pages/DataTables/direct URLs, CSRF/method enforcement, and manager-note non-disclosure.
 
 ### 10. Admin UI
 

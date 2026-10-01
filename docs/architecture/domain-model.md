@@ -49,6 +49,8 @@ Quote state is derived rather than maintained in a status column:
 - `SUBMITTED`: a Request exists;
 - `EXPIRED`: no Request exists and expiry has been reached.
 
+`AVAILABLE` is an internal derived-state name. Requester-facing workflow presents it as an **Unsubmitted Quote** or **Not yet submitted**, because a Quote without a Request has not entered fulfillment. The Quote public ID remains available for routing and technical identity but is not an operational EVE contract reference.
+
 ### BuybackRequest
 
 `BuybackRequest` is a separate fulfillment aggregate with exactly one immutable Quote. It has an internal numeric ID and public ULID-style identifier. Requester ownership is derived from the referenced Quote; the Request MUST NOT duplicate requester identity.
@@ -184,6 +186,7 @@ The final unit buyback price is rounded `HALF_UP` to `0.01 ISK`. A line total is
 - A Quote total is calculated server-side as the exact sum of its server-derived line totals.
 - A Quote is never repriced or edited.
 - A Quote creates at most one Request.
+- The appraisal-to-Request application workflow composes the existing Quote-creation and Quote-submission boundaries; a Request failure does not roll back an already persisted Quote.
 - Request state can leave `PENDING` once only.
 - Rejection requires a reason.
 - Terminal Requests cannot be reopened, partially completed, or have payouts/items modified.

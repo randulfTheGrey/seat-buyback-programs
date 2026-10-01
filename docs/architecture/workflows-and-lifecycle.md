@@ -69,11 +69,35 @@ After pricing finishes, the server stores the result in Laravel cache under a sh
 - may create at most one Quote;
 - supports idempotent duplicate submission by returning/reusing the same Quote.
 
-Quote validity begins when appraisal pricing completes. Waiting to press “Create Quote” does not extend the deadline, and Quote creation preserves the original expiry.
+Quote validity begins when appraisal pricing completes. Waiting to press “Save Quote” or “Create Buyback Request” does not extend the deadline, and Quote creation preserves the original expiry.
 
 At token exchange, the Program MUST still be `ENABLED`. If it is, later rule or provider changes MUST NOT recalculate the cached result. The trusted appraisal evidence is used exactly as priced. The client cannot amend type resolution, prices, modifiers, totals, snapshots, or which `PRICED` lines enter the Quote.
 
 Token consumption and Quote creation are atomic. Cache/locking and database uniqueness are designed so retries cannot produce two Quotes or a partially created Quote.
+
+## User choices after appraisal
+
+The domain lifecycle remains:
+
+```text
+Appraisal
+→ Quote
+→ BuybackRequest
+```
+
+The requester interface presents two sibling choices after reviewing a payable appraisal:
+
+```text
+Review Appraisal
+├── Save Quote
+└── Create Buyback Request
+```
+
+**Save Quote** exchanges the trusted appraisal token for its one immutable Quote and stops. The saved Quote is an **Unsubmitted Quote**: it is not in fulfillment, must not be used to create an EVE contract, and remains available for later Request creation until it expires.
+
+**Create Buyback Request** uses a focused application orchestration that first creates or reuses that same immutable Quote, then submits or reuses its one BuybackRequest. Both steps call the production idempotency services; the orchestration does not duplicate Quote or Request business rules.
+
+Quote and Request persistence are intentionally separate transactions. If Quote creation succeeds and Request creation fails, the Quote remains saved as an Unsubmitted Quote. A retry through either the appraisal action or saved Quote action reuses the Quote and cannot create a duplicate Quote or Request.
 
 ## Quote lifecycle
 
@@ -89,6 +113,8 @@ The UI derives Quote state:
 - `AVAILABLE` when there is no Request and it has not expired;
 - `EXPIRED` when there is no Request and expiry has arrived;
 - `SUBMITTED` when its Request exists.
+
+Requester-facing UI describes the internal `AVAILABLE` state as **Unsubmitted Quote** or **Not yet submitted** so availability is not confused with fulfillment submission. Quote public IDs remain transport/internal identifiers and are not ordinary requester-facing contract references.
 
 The server MUST derive the Quote total as the exact sum of server-derived line totals. An expired Quote cannot be submitted; the requester must re-appraise. A valid Quote can create at most one Request, and submission MUST be idempotent.
 
@@ -129,7 +155,7 @@ Controllers remain thin and enforce policy/resource authorization for every obje
 
 ## Requester and administrator workflow
 
-The requester journey is Program -> Paste -> Appraisal -> Quote -> Request. The appraisal displays every line outcome and clearly identifies which lines will enter the Quote. Quote creation includes all and only `PRICED` outcomes. “My Buybacks” is focused on submitted Buyback Requests; Quotes may be viewed where needed for offer/submission flow but are not presented as submitted buybacks.
+The requester journey is Program -> Paste -> Appraisal, followed by either Save Quote or Create Buyback Request. The appraisal displays every line outcome and clearly identifies which lines will enter the Quote. Quote creation includes all and only `PRICED` outcomes. “My Buybacks” separates **Unsubmitted Quotes** from submitted Buyback Request history. Saved Quotes state plainly that no Request exists and that the requester must create a Request before creating an EVE contract. The Request public ID is the only ordinary operational contract reference; Request detail provides the copy action, contract next steps, Program instructions, and optional contract-ID workflow.
 
 The administrator manages Programs and sparse Rules. Program defaults use the plain-language choices “Accept items unless a rule rejects them” and “Reject items unless a rule accepts them.” Price references select opaque provider instances for BUY and SELL and select either a dedicated provider or derived midpoint for SPLIT; Buyback never configures provider backends.
 

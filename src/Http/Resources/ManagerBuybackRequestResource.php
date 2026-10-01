@@ -16,7 +16,6 @@ final class ManagerBuybackRequestResource extends JsonResource
 
         return [
             'public_id' => $this->public_id,
-            'quote_public_id' => $this->quote->public_id,
             'requester_user_id' => $this->quote->requester_user_id,
             'requester_name' => $this->quote->requester_name_snapshot,
             'program_id' => $this->quote->program_id,

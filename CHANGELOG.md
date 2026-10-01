@@ -6,6 +6,35 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Present distinct **Save Quote** and **Create Buyback Request** actions after
+  appraisal. Saving persists only the immutable Quote; creating a Request
+  idempotently creates/reuses both aggregates and opens Request contract steps.
+- Preserve a successfully saved Quote when immediate Request creation fails, so
+  retry reuses the Quote without duplicate Quotes or Requests.
+- Rename requester saved-Quote workflow to **Unsubmitted Quotes**, remove visible
+  Quote references from ordinary requester and manager surfaces, and make the
+  Buyback Request reference the canonical EVE contract reference with a copy
+  action.
+- Clarify saved-Quote warnings, Request contract steps, Program instructions,
+  and optional contract-ID entry for the targeted `1.0.0-rc.5` candidate.
+- Replace native browser confirmations with SeAT-styled confirmation modals for
+  Request submission, cancellation, completion, rejection, and administration
+  archive actions.
+- Keep numeric appraisal and Quote pricing columns readable when SeAT skins
+  apply dark table backgrounds.
+- Make side-by-side requester and manager detail cards fill their Bootstrap row
+  height, with form actions consistently aligned at the bottom.
+
+### Security
+
+- Record the focused ADR 0013 exception for Laravel debug-page XSS advisory
+  `PKSA-d5tc-s1qs-h781`, while retaining advisory blocking/audit failures and
+  requiring `APP_DEBUG=false` for production SeAT deployments.
+
+## [1.0.0-rc.4] - 2026-09-19
+
 ### Changed
 
 - Vendor-prefix the three independent SeAT ACL identifiers as
@@ -77,7 +106,8 @@ follow [Semantic Versioning](https://semver.org/).
   reviewed compatibility/security policy is documented in ADR 0013.
 - Public contribution workflow remains deferred until after stable `1.0.0`.
 
-[Unreleased]: https://github.com/randulfTheGrey/seat-buyback-programs/compare/v1.0.0-rc.3...HEAD
+[Unreleased]: https://github.com/randulfTheGrey/seat-buyback-programs/compare/v1.0.0-rc.4...HEAD
+[1.0.0-rc.4]: https://github.com/randulfTheGrey/seat-buyback-programs/compare/v1.0.0-rc.3...v1.0.0-rc.4
 [1.0.0-rc.3]: https://github.com/randulfTheGrey/seat-buyback-programs/compare/v1.0.0-rc.2...v1.0.0-rc.3
 [1.0.0-rc.2]: https://github.com/randulfTheGrey/seat-buyback-programs/compare/v1.0.0-rc.1...v1.0.0-rc.2
 [1.0.0-rc.1]: https://github.com/randulfTheGrey/seat-buyback-programs/releases/tag/v1.0.0-rc.1

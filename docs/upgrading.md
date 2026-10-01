@@ -5,6 +5,21 @@ test upgrades outside production when possible. During the release-candidate
 phase, schema and migration compatibility may be more constrained than it will
 be after stable `1.0.0`.
 
+## RC5 requester-workflow update
+
+The prepared `1.0.0-rc.5` remediation has no schema, configuration, permission,
+or immutable-history migration. Existing valid saved Quotes remain
+Unsubmitted Quotes and can create Requests until expiration, including after
+their Program is disabled or archived. Existing Requests are unchanged.
+
+Use the normal update commands below, clear application caches, and restart
+workers. Then verify both post-appraisal choices: **Save Quote** must create no
+Request, while **Create Buyback Request** must open Request detail and its EVE
+contract instructions. No new role remapping is needed after an installation
+has already completed the rc.4 permission transition.
+
+## RC4 permission transition
+
 Before upgrading an rc.1, rc.2, or rc.3 installation to rc.4, record which SeAT
 roles currently hold each `buyback.request`, `buyback.manage`, and
 `buyback.admin` permission. You will use that record for the manual remapping

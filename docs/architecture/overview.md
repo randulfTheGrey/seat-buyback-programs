@@ -73,8 +73,8 @@ Quote creation atomically persists only `PRICED` lines and the snapshots needed 
 1. A user with `randulfthegrey-buyback.request` selects an enabled Program and submits inventory text.
 2. The synchronous appraisal pipeline resolves, evaluates, prices, and caches a trusted `AppraisalResult`.
 3. The UI displays priced and non-payable outcomes without accepting client-calculated money.
-4. The user exchanges the opaque token for an immutable Quote. The Program must still be enabled.
-5. A valid, unsubmitted Quote may create one pending Buyback Request, even if the Program was later disabled or archived.
+4. The user chooses **Save Quote** or **Create Buyback Request**. Both create/reuse the immutable Quote while the Program is enabled; the second choice immediately composes that with idempotent Request submission.
+5. A saved valid Unsubmitted Quote may later create one pending Buyback Request, even if the Program was disabled or archived after Quote creation.
 6. The requester or a manager maintains permitted pending fields and performs their respective terminal actions.
 
 ## Data ownership

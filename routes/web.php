@@ -10,6 +10,7 @@ use RandulfTheGrey\Seat\BuybackPrograms\Http\Controllers\AdminRulePreviewControl
 use RandulfTheGrey\Seat\BuybackPrograms\Http\Controllers\AdminSdeSelectorController;
 use RandulfTheGrey\Seat\BuybackPrograms\Http\Controllers\AppraisalController;
 use RandulfTheGrey\Seat\BuybackPrograms\Http\Controllers\AppraisalPageController;
+use RandulfTheGrey\Seat\BuybackPrograms\Http\Controllers\CreateBuybackRequestFromAppraisalController;
 use RandulfTheGrey\Seat\BuybackPrograms\Http\Controllers\ManageBuybackRequestController;
 use RandulfTheGrey\Seat\BuybackPrograms\Http\Controllers\ManagerPageController;
 use RandulfTheGrey\Seat\BuybackPrograms\Http\Controllers\ProgramController;
@@ -35,6 +36,8 @@ Route::middleware(['web', 'auth'])
 
             Route::post('quotes', QuoteController::class)
                 ->name('quotes.store');
+            Route::post('appraisals/requests', CreateBuybackRequestFromAppraisalController::class)
+                ->name('requests.store-from-appraisal');
             Route::get('quotes/{quote}', QuotePageController::class)
                 ->name('quotes.show');
             Route::post('quotes/{quote}/submit', SubmitBuybackQuoteController::class)

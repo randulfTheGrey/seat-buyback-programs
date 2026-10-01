@@ -38,7 +38,7 @@ final class SubmitBuybackQuoteController
             if (! $request->expectsJson()) {
                 return redirect()
                     ->route('buyback.requests.show', $buybackRequest)
-                    ->with('success', 'Your Buyback Request has been submitted.');
+                    ->with('success', 'Your Buyback Request has been created. Follow the contract steps below.');
             }
 
             return response()->json([
@@ -50,7 +50,7 @@ final class SubmitBuybackQuoteController
             }
 
             return $this->failure($request, $quote, 'QUOTE_OWNERSHIP_MISMATCH', $exception->getMessage(), 403,
-                'The Quote could not be submitted.');
+                'The Buyback Request could not be created.');
         } catch (QuoteExpiredException $exception) {
             return $this->failure($request, $quote, 'QUOTE_EXPIRED', $exception->getMessage(), 409,
                 'This Quote has expired. Run a new appraisal for current pricing.');
@@ -61,12 +61,12 @@ final class SubmitBuybackQuoteController
             Log::error('Buyback Request submission failed.', ['exception' => $exception]);
 
             return $this->failure($request, $quote, 'REQUEST_UNAVAILABLE', 'The Buyback Request could not be submitted.', 503,
-                'The Buyback Request could not be submitted. Please try again later.');
+                'The Buyback Request could not be created. Your Quote remains saved; please try again.');
         } catch (Throwable $exception) {
             Log::error('Unexpected Buyback Request submission failure.', ['exception' => $exception]);
 
             return $this->failure($request, $quote, 'REQUEST_UNAVAILABLE', 'The Buyback Request could not be submitted.', 503,
-                'The Buyback Request could not be submitted. Please try again later.');
+                'The Buyback Request could not be created. Your Quote remains saved; please try again.');
         }
     }
 

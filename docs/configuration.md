@@ -79,9 +79,21 @@ provider-instance identity, raw references, modifiers, final unit prices, and
 totals. Expired Quotes require a new appraisal. Market movement, Program edits,
 and provider deletion never reprice historical Quotes.
 
+After appraisal, **Save Quote** creates/reuses this immutable offer without
+submitting it. It appears under **Unsubmitted Quotes** until it expires or gains
+a Request. Do not create an EVE contract from a saved Quote alone.
+
 ## Requests
 
-Submitting a valid Quote creates one Request in `PENDING`. The only terminal
+**Create Buyback Request** from appraisal creates/reuses the Quote and
+immediately creates/reuses its one Request. The same action on an Unsubmitted
+Quote submits the saved offer. Retries and either action order are idempotent;
+if immediate Request creation fails, the Quote remains saved for retry.
+
+A valid Quote creates one Request in `PENDING`. The Request public reference is
+the operational reference to place in the EVE contract description/title;
+Quote IDs are not contract references. Request detail shows the quoted total,
+items, Program contract instructions, copy action, and next steps. The only terminal
 transitions are:
 
 - `PENDING → COMPLETED` by a manager;

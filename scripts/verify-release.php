@@ -28,6 +28,7 @@ $requiredFiles = [
     'docs/releases/1.0.0-rc.2.md',
     'docs/releases/1.0.0-rc.3.md',
     'docs/releases/1.0.0-rc.4.md',
+    'docs/releases/1.0.0-rc.5.md',
     'docs/releasing.md',
     'docs/upgrading.md',
 ];

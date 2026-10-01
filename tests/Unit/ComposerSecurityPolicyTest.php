@@ -29,7 +29,13 @@ final class ComposerSecurityPolicyTest extends TestCase
             'PKSA-m5cs-t1y6-qpcs',
             'PKSA-3r5d-mb8f-1qw9',
             'PKSA-mdq4-51ck-6kdq',
+            'PKSA-d5tc-s1qs-h781',
         ], array_keys($advisories['ignore-id']));
+
+        self::assertStringContainsString(
+            'APP_DEBUG=true',
+            $advisories['ignore-id']['PKSA-d5tc-s1qs-h781']['reason'],
+        );
 
         foreach ($advisories['ignore-id'] as $exception) {
             self::assertSame(false, $exception['on-audit']);

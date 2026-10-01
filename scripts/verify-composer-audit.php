@@ -15,6 +15,7 @@ $allowed = [
     'PKSA-m5cs-t1y6-qpcs',
     'PKSA-3r5d-mb8f-1qw9',
     'PKSA-mdq4-51ck-6kdq',
+    'PKSA-d5tc-s1qs-h781',
 ];
 $found = [];
 $unexpected = [];

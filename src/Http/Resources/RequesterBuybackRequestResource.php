@@ -16,7 +16,6 @@ final class RequesterBuybackRequestResource extends JsonResource
 
         return [
             'public_id' => $this->public_id,
-            'quote_public_id' => $this->quote->public_id,
             'status' => $this->status->value,
             'submitted_at' => $this->submitted_at->toIso8601String(),
             'eve_contract_id' => $this->eve_contract_id,

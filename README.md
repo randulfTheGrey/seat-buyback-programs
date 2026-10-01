@@ -6,22 +6,26 @@ defaults, sparse GROUP and TYPE overrides, compression-aware GROUP policies,
 and logical BUY, SELL, and SPLIT price references supplied exclusively by
 `seat-prices-core`.
 
-The requester journey is appraisal to immutable Quote to fulfillment Request.
-Appraisals are transient server-trusted calculations; Quotes preserve payable
-prices and policy evidence; Requests provide independent requester and manager
-workflows. Configuration, fulfillment, and requester access use three separate
+After appraisal, a requester can either save the immutable Quote for later or
+create a Buyback Request immediately. Appraisals are transient server-trusted
+calculations; Quotes preserve payable prices and policy evidence; Requests
+provide independent requester and manager fulfillment workflows. A saved Quote
+is not submitted, and only the Buyback Request reference belongs in the EVE
+contract. Configuration, fulfillment, and requester access use three separate
 SeAT permissions.
 
 ## Release status
 
-The current published candidate is **1.0.0-rc.3**. The next targeted candidate,
-**1.0.0-rc.4**, corrects the permission namespace before stable `1.0.0`.
-Release candidates are intended for package, upgrade, and workflow validation.
+The current published candidate is **1.0.0-rc.4**. The next targeted candidate,
+**1.0.0-rc.5**, clarifies the saved Quote versus Buyback Request workflow before
+stable `1.0.0`. Release candidates are intended for package, upgrade, and
+workflow validation.
 
 Public source and release tags are hosted at
 [`randulfTheGrey/seat-buyback-programs`](https://github.com/randulfTheGrey/seat-buyback-programs),
-and published tags are available through Packagist. See the prepared
-[RC4 release notes](docs/releases/1.0.0-rc.4.md) for the pending candidate.
+and published tags are available through Packagist. See the published
+[RC4 release notes](docs/releases/1.0.0-rc.4.md) and the prepared
+[RC5 release notes](docs/releases/1.0.0-rc.5.md).
 
 ## Compatibility
 

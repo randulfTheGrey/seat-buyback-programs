@@ -133,6 +133,10 @@ final class RequesterUiTest extends TestCase
         self::assertStringContainsString('Item rule', $html);
         self::assertStringContainsString('5% premium', $html);
         self::assertStringContainsString('name="appraisal_token"', $html);
+        self::assertStringContainsString('Save Quote', $html);
+        self::assertStringContainsString('Create Buyback Request', $html);
+        self::assertStringContainsString('Saving a Quote does not submit it for processing.', $html);
+        self::assertSame(2, substr_count($html, 'name="appraisal_token"'));
         self::assertStringNotContainsString('name="line_total"', $html);
         self::assertStringNotContainsString('name="final_unit_price"', $html);
     }
@@ -172,6 +176,7 @@ final class RequesterUiTest extends TestCase
             ->assertSee('9.00 ISK')
             ->assertSee('18.00 ISK')
             ->assertDontSee('999999.99');
+        self::assertSame(4, substr_count($response->getContent(), 'class="text-right text-reset"'));
 
         $quoteResponse = $this->post(route('buyback.quotes.store'), [
             'appraisal_token' => $response->viewData('appraisalToken'),
@@ -183,6 +188,73 @@ final class RequesterUiTest extends TestCase
         $quoteResponse->assertRedirect(route('buyback.quotes.show', $quote));
         self::assertSame('18.00', $quote->payable_total);
         self::assertSame('9.00', $quote->items->sole()->final_unit_price);
+        self::assertDatabaseCount('buyback_requests', 0);
+
+        $savedPage = $this->get(route('buyback.quotes.show', $quote))
+            ->assertOk()
+            ->assertSee('Not yet submitted')
+            ->assertSee('no Buyback Request exists yet')
+            ->assertSee('Create Buyback Request')
+            ->assertSee('Back to My Buybacks')
+            ->assertSee('class="btn btn-success confirmform"', escape: false)
+            ->assertSee('data-seat-action="create a Buyback Request from this saved Quote"', escape: false)
+            ->assertDontSee('window.confirm', escape: false);
+        self::assertStringNotContainsString($quote->public_id, $this->visibleText($savedPage->getContent()));
+        self::assertSame(4, substr_count($savedPage->getContent(), 'class="text-right text-reset"'));
+    }
+
+    public function test_create_buyback_request_from_appraisal_is_one_click_and_idempotent(): void
+    {
+        [$program, $token] = $this->completedAppraisalToken();
+        $user = $this->user(42, ['randulfthegrey-buyback.request']);
+
+        $first = $this->actingAs($user)->post(route('buyback.requests.store-from-appraisal'), [
+            'appraisal_token' => $token,
+        ]);
+        $quote = BuybackQuote::query()->sole();
+        $buybackRequest = BuybackRequest::query()->sole();
+
+        $first->assertRedirect(route('buyback.requests.show', $buybackRequest));
+        $this->post(route('buyback.requests.store-from-appraisal'), ['appraisal_token' => $token])
+            ->assertRedirect(route('buyback.requests.show', $buybackRequest));
+        self::assertSame($program->id, $quote->program_id);
+        self::assertSame($quote->id, $buybackRequest->quote_id);
+        self::assertDatabaseCount('buyback_quotes', 1);
+        self::assertDatabaseCount('buyback_requests', 1);
+
+        $requestPage = $this->get(route('buyback.requests.show', $buybackRequest))
+            ->assertOk()
+            ->assertSee('Next: Create your EVE contract')
+            ->assertSee('Copy reference')
+            ->assertSee($buybackRequest->public_id)
+            ->assertSee('Use this Buyback Request reference in your EVE contract description/title.');
+        self::assertStringNotContainsString($quote->public_id, $this->visibleText($requestPage->getContent()));
+    }
+
+    public function test_one_click_request_failure_preserves_recoverable_unsubmitted_quote(): void
+    {
+        [, $token] = $this->completedAppraisalToken();
+        $fail = true;
+        BuybackRequest::creating(static function () use (&$fail): void {
+            if ($fail) {
+                throw new \RuntimeException('Simulated Request persistence failure.');
+            }
+        });
+
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
+            ->post(route('buyback.requests.store-from-appraisal'), ['appraisal_token' => $token]);
+        $quote = BuybackQuote::query()->sole();
+
+        $response->assertRedirect(route('buyback.quotes.show', $quote))
+            ->assertSessionHas('error', 'Your Quote was saved, but the Buyback Request could not be created. Try again from this saved Quote.');
+        self::assertDatabaseCount('buyback_quotes', 1);
+        self::assertDatabaseCount('buyback_requests', 0);
+
+        $fail = false;
+        $this->post(route('buyback.quotes.submit', $quote))
+            ->assertRedirect(route('buyback.requests.show', BuybackRequest::query()->sole()));
+        self::assertDatabaseCount('buyback_quotes', 1);
+        self::assertDatabaseCount('buyback_requests', 1);
     }
 
     public function test_zero_payable_appraisal_does_not_offer_quote_creation(): void
@@ -210,7 +282,8 @@ final class RequesterUiTest extends TestCase
         ])->render();
 
         self::assertStringContainsString('No payable items are available', $html);
-        self::assertStringNotContainsString('Create Quote</button>', $html);
+        self::assertStringNotContainsString('Save Quote</button>', $html);
+        self::assertStringNotContainsString('Create Buyback Request</button>', $html);
     }
 
     public function test_quote_pages_are_owner_only_payable_only_and_derive_state_without_program_status_gate(): void
@@ -221,21 +294,22 @@ final class RequesterUiTest extends TestCase
             ->get(route('buyback.quotes.show', $quote))
             ->assertNotFound();
 
-        $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.quotes.show', $quote))
             ->assertOk()
-            ->assertSee('Available')
-            ->assertSee('Submit Buyback')
+            ->assertSee('Not yet submitted')
+            ->assertSee('Create Buyback Request')
             ->assertSee('Tritanium')
-            ->assertSee('Contract only the quoted items', escape: false)
+            ->assertSee('Do not create your EVE contract until you create the Buyback Request.')
             ->assertDontSee('EXCLUDED');
+        self::assertStringNotContainsString($quote->public_id, $this->visibleText($response->getContent()));
 
         $quote = $this->quote(42, ProgramStatus::ENABLED, '2026-09-11 12:00:00');
         $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.quotes.show', $quote))
             ->assertOk()
             ->assertSee('This Quote has expired')
-            ->assertDontSee('Submit Buyback</button>', escape: false);
+            ->assertDontSee('Create Buyback Request</button>', escape: false);
     }
 
     public function test_valid_quote_submits_after_program_disable_and_duplicate_post_reuses_request(): void
@@ -294,7 +368,7 @@ final class RequesterUiTest extends TestCase
             ->get(route('buyback.requests.index'))
             ->assertOk()
             ->assertSee('submitted Buyback Requests')
-            ->assertSee('Request reference')
+            ->assertSee('Buyback Request')
             ->assertSee('"order":[[2,"desc"]]', escape: false);
     }
 
@@ -309,14 +383,20 @@ final class RequesterUiTest extends TestCase
         $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.requests.index'))
             ->assertOk()
-            ->assertSee('Available Quotes')
-            ->assertSee('Continue a Quote')
-            ->assertSee($availableSooner->public_id)
+            ->assertSee('Unsubmitted Quotes')
+            ->assertSee('they have not been submitted as Buyback Requests')
+            ->assertSee('Create a Buyback Request before creating your EVE contract')
+            ->assertSee('Create Buyback Request')
+            ->assertSee('View Quote')
             ->assertSee(route('buyback.quotes.show', $availableSooner), escape: false)
-            ->assertSee($availableLater->public_id)
-            ->assertDontSee($otherRequester->public_id)
-            ->assertDontSee($expired->public_id)
-            ->assertDontSee($submitted->quote->public_id);
+            ->assertSee(route('buyback.quotes.show', $availableLater), escape: false);
+
+        $visibleText = $this->visibleText($response->getContent());
+        self::assertStringNotContainsString($availableSooner->public_id, $visibleText);
+        self::assertStringNotContainsString($availableLater->public_id, $visibleText);
+        self::assertStringNotContainsString($otherRequester->public_id, $visibleText);
+        self::assertStringNotContainsString($expired->public_id, $visibleText);
+        self::assertStringNotContainsString($submitted->quote->public_id, $visibleText);
 
         self::assertSame(
             [$availableSooner->public_id, $availableLater->public_id],
@@ -324,7 +404,7 @@ final class RequesterUiTest extends TestCase
         );
     }
 
-    public function test_my_buybacks_hides_available_quotes_panel_when_none_are_available(): void
+    public function test_my_buybacks_shows_empty_unsubmitted_quotes_state_when_none_are_available(): void
     {
         $this->quote(42, expiresAt: '2026-09-11 12:00:00');
         $this->request(42);
@@ -333,7 +413,8 @@ final class RequesterUiTest extends TestCase
         $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.requests.index'))
             ->assertOk()
-            ->assertDontSee('Available Quotes')
+            ->assertSee('Unsubmitted Quotes')
+            ->assertSee('You have no unsubmitted Quotes.')
             ->assertSee('submitted Buyback Requests');
     }
 
@@ -345,14 +426,29 @@ final class RequesterUiTest extends TestCase
             ->get(route('buyback.requests.show', $buybackRequest))
             ->assertNotFound();
 
-        $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
             ->get(route('buyback.requests.show', $buybackRequest))
             ->assertOk()
+            ->assertSee($buybackRequest->public_id)
+            ->assertSee('Copy reference')
+            ->assertSee('Next: Create your EVE contract')
+            ->assertSee('Put the Buyback Request reference')
+            ->assertSee('Create an item exchange contract assigned to the corporation.')
             ->assertSee('Requester-visible note')
             ->assertDontSee('Manager secret')
             ->assertSee('Update contract ID')
             ->assertSee('Update note')
-            ->assertSee('Cancel Buyback');
+            ->assertSee('Cancel Buyback')
+            ->assertSee('class="col-lg-6 d-flex"', escape: false)
+            ->assertSee('class="card flex-fill"', escape: false)
+            ->assertSee('class="d-flex flex-column flex-fill"', escape: false)
+            ->assertSee('class="btn btn-danger confirmform"', escape: false)
+            ->assertSee('data-seat-action="cancel this Buyback Request;', escape: false)
+            ->assertDontSee('window.confirm', escape: false);
+        self::assertStringNotContainsString($buybackRequest->quote->public_id, $this->visibleText($response->getContent()));
+        self::assertSame(2, substr_count($response->getContent(), 'class="col-lg-6 d-flex"'));
+        self::assertSame(2, substr_count($response->getContent(), 'class="card flex-fill"'));
+        self::assertSame(2, substr_count($response->getContent(), 'class="d-flex flex-column flex-fill"'));
 
         $this->patch(route('buyback.requests.contract.update', $buybackRequest), ['eve_contract_id' => 123456])
             ->assertRedirect(route('buyback.requests.show', $buybackRequest));
@@ -398,6 +494,7 @@ final class RequesterUiTest extends TestCase
             'buyback.appraisals.create' => ['GET', 'HEAD'],
             'buyback.appraisals.store' => ['POST'],
             'buyback.quotes.store' => ['POST'],
+            'buyback.requests.store-from-appraisal' => ['POST'],
             'buyback.quotes.show' => ['GET', 'HEAD'],
             'buyback.quotes.submit' => ['POST'],
             'buyback.requests.index' => ['GET', 'HEAD'],
@@ -429,6 +526,43 @@ final class RequesterUiTest extends TestCase
         self::assertSame('5% premium', RequesterUi::modifier(500));
         self::assertSame('1.25% premium', RequesterUi::modifier(125));
         self::assertSame('No adjustment', RequesterUi::modifier(0));
+    }
+
+    /** @return array{BuybackProgram, string} */
+    private function completedAppraisalToken(): array
+    {
+        config()->set('cache.default', 'array');
+        $this->app->instance(InventoryTypeResolver::class, new RequesterUiTypeResolver());
+        $this->app->instance(SeatPriceProviderGateway::class, new RequesterUiPriceGateway());
+        $program = $this->program();
+        $program->priceReferences()->createMany([
+            [
+                'reference_mode' => ReferenceMode::BUY,
+                'resolution' => ReferenceResolution::PROVIDER,
+                'provider_instance_id' => 10,
+            ],
+            [
+                'reference_mode' => ReferenceMode::SELL,
+                'resolution' => ReferenceResolution::PROVIDER,
+                'provider_instance_id' => 20,
+            ],
+            [
+                'reference_mode' => ReferenceMode::SPLIT,
+                'resolution' => ReferenceResolution::DERIVED_MIDPOINT,
+                'provider_instance_id' => null,
+            ],
+        ]);
+
+        $response = $this->actingAs($this->user(42, ['randulfthegrey-buyback.request']))
+            ->post(route('buyback.appraisals.store', $program), ['inventory' => 'Tritanium 2'])
+            ->assertOk();
+
+        return [$program, (string) $response->viewData('appraisalToken')];
+    }
+
+    private function visibleText(string $html): string
+    {
+        return html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5);
     }
 
     private function user(int $id, array $permissions): RequesterUiUser

@@ -15,6 +15,7 @@ use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use RandulfTheGrey\Seat\BuybackPrograms\Application\Quote\CreateQuoteFromAppraisal;
+use RandulfTheGrey\Seat\BuybackPrograms\Application\Request\CreateBuybackRequestFromAppraisal;
 use RandulfTheGrey\Seat\BuybackPrograms\Contracts\AppraisalStore;
 use RandulfTheGrey\Seat\BuybackPrograms\Contracts\SeatPriceProviderGateway;
 use RandulfTheGrey\Seat\BuybackPrograms\Domain\Appraisal\AppraisalLine;
@@ -30,12 +31,14 @@ use RandulfTheGrey\Seat\BuybackPrograms\Enums\ReferenceResolution;
 use RandulfTheGrey\Seat\BuybackPrograms\Enums\RuleAcceptance;
 use RandulfTheGrey\Seat\BuybackPrograms\Enums\RuleTargetType;
 use RandulfTheGrey\Seat\BuybackPrograms\Events\BuybackQuoteCreated;
+use RandulfTheGrey\Seat\BuybackPrograms\Events\BuybackRequestSubmitted;
 use RandulfTheGrey\Seat\BuybackPrograms\Exceptions\AppraisalExpiredException;
 use RandulfTheGrey\Seat\BuybackPrograms\Exceptions\AppraisalOwnershipException;
 use RandulfTheGrey\Seat\BuybackPrograms\Exceptions\AppraisalTokenNotFoundException;
 use RandulfTheGrey\Seat\BuybackPrograms\Exceptions\InvalidAppraisalForQuoteException;
 use RandulfTheGrey\Seat\BuybackPrograms\Exceptions\ProgramUnavailableForQuoteException;
 use RandulfTheGrey\Seat\BuybackPrograms\Exceptions\QuotePersistenceException;
+use RandulfTheGrey\Seat\BuybackPrograms\Exceptions\RequestCreationFromAppraisalException;
 use RandulfTheGrey\Seat\BuybackPrograms\Http\Requests\CreateQuoteRequest;
 use RandulfTheGrey\Seat\BuybackPrograms\Models\BuybackProgram;
 use RandulfTheGrey\Seat\BuybackPrograms\Models\BuybackQuote;
@@ -409,17 +412,87 @@ final class CreateQuoteFromAppraisalTest extends TestCase
 
     public function test_quote_route_is_token_only_post_and_has_requester_permission(): void
     {
-        $route = $this->app['router']->getRoutes()->getByName('buyback.quotes.store');
+        foreach (['buyback.quotes.store', 'buyback.requests.store-from-appraisal'] as $routeName) {
+            $route = $this->app['router']->getRoutes()->getByName($routeName);
 
-        self::assertNotNull($route);
-        self::assertSame(['POST'], $route->methods());
-        self::assertSame(['web', 'auth', 'can:randulfthegrey-buyback.request'], $route->gatherMiddleware());
+            self::assertNotNull($route);
+            self::assertSame(['POST'], $route->methods());
+            self::assertSame(['web', 'auth', 'can:randulfthegrey-buyback.request'], $route->gatherMiddleware());
+        }
+
         self::assertSame(['appraisal_token'], array_keys((new CreateQuoteRequest())->rules()));
+    }
+
+    public function test_request_orchestration_creates_and_reuses_exactly_one_quote_and_request(): void
+    {
+        Event::fake([BuybackQuoteCreated::class, BuybackRequestSubmitted::class]);
+        $program = $this->program();
+        $token = $this->store($this->appraisal($program));
+
+        $first = $this->requestService()->create($token, 42, 'Capsuleer Example');
+        $second = $this->requestService()->create($token, 42, 'Changed Name');
+
+        self::assertSame($first->id, $second->id);
+        self::assertSame($first->quote_id, $second->quote_id);
+        self::assertDatabaseCount('buyback_quotes', 1);
+        self::assertDatabaseCount('buyback_quote_items', 1);
+        self::assertDatabaseCount('buyback_requests', 1);
+        Event::assertDispatchedTimes(BuybackQuoteCreated::class, 1);
+        Event::assertDispatchedTimes(BuybackRequestSubmitted::class, 1);
+    }
+
+    public function test_saved_quote_is_reused_when_request_is_created_after_program_is_disabled(): void
+    {
+        $program = $this->program();
+        $token = $this->store($this->appraisal($program));
+        $savedQuote = $this->service()->create($token, 42, 'Capsuleer Example');
+        $program->update(['status' => ProgramStatus::DISABLED]);
+
+        $request = $this->requestService()->create($token, 42, 'Capsuleer Example');
+
+        self::assertSame($savedQuote->id, $request->quote_id);
+        self::assertDatabaseCount('buyback_quotes', 1);
+        self::assertDatabaseCount('buyback_requests', 1);
+    }
+
+    public function test_request_failure_preserves_saved_quote_and_retry_reuses_it(): void
+    {
+        $program = $this->program();
+        $token = $this->store($this->appraisal($program));
+        $fail = true;
+        BuybackRequest::creating(static function () use (&$fail): void {
+            if ($fail) {
+                throw new RuntimeException('Simulated Request persistence failure.');
+            }
+        });
+
+        try {
+            $this->requestService()->create($token, 42, 'Capsuleer Example');
+            self::fail('The Request failure must be reported with the saved Quote.');
+        } catch (RequestCreationFromAppraisalException $exception) {
+            self::assertTrue($exception->quote->exists);
+            self::assertDatabaseCount('buyback_quotes', 1);
+            self::assertDatabaseCount('buyback_quote_items', 1);
+            self::assertDatabaseCount('buyback_requests', 0);
+        }
+
+        $savedQuoteId = BuybackQuote::query()->sole()->id;
+        $fail = false;
+        $request = $this->requestService()->create($token, 42, 'Capsuleer Example');
+
+        self::assertSame($savedQuoteId, $request->quote_id);
+        self::assertDatabaseCount('buyback_quotes', 1);
+        self::assertDatabaseCount('buyback_requests', 1);
     }
 
     private function service(): CreateQuoteFromAppraisal
     {
         return $this->app->make(CreateQuoteFromAppraisal::class);
+    }
+
+    private function requestService(): CreateBuybackRequestFromAppraisal
+    {
+        return $this->app->make(CreateBuybackRequestFromAppraisal::class);
     }
 
     private function store(AppraisalResult $appraisal): string

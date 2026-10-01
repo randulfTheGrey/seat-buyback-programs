@@ -23,8 +23,9 @@ The release manager records evidence for every item before publication.
 - [ ] Packagist package is registered/updated from the public GitHub repository.
 - [ ] Fresh Composer install from the public package passes in a disposable SeAT 5
       environment.
-- [ ] End-to-end Program → appraisal → Quote → Request → terminal action smoke test
-      passes with independent permissions.
+- [ ] End-to-end Program → appraisal → Save Quote / Create Buyback Request →
+      contract guidance → terminal action smoke tests pass with independent
+      permissions and no visible requester Quote reference.
 - [ ] Stable `1.0.0` is promoted only after RC validation succeeds.
 - [ ] Before authority cutover, GitHub CI, protection, issues/PRs, security
       reporting, and Packagist integration are validated; GitLab is then made

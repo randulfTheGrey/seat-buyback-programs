@@ -114,15 +114,28 @@ final class ManagerUiTest extends TestCase
             ->assertSee('Tritanium')
             ->assertSee('10.005000000000000000')
             ->assertSee('Provider at appraisal')
+            ->assertDontSee($request->quote->public_id)
             ->assertSee('No EVE contract ID is recorded')
             ->assertSee('Complete Request')
             ->assertSee('Reject Request')
+            ->assertSee('class="col-lg-5 d-flex"', escape: false)
+            ->assertSee('class="col-lg-7 d-flex"', escape: false)
+            ->assertSee('card card-outline card-success flex-fill', escape: false)
+            ->assertSee('card card-outline card-danger flex-fill', escape: false)
+            ->assertSee('class="btn btn-success confirmform"', escape: false)
+            ->assertSee('data-seat-action="permanently mark this Buyback Request completed;', escape: false)
+            ->assertSee('class="btn btn-danger confirmform"', escape: false)
+            ->assertSee('data-seat-action="permanently reject this Buyback Request;', escape: false)
+            ->assertDontSee('window.confirm', escape: false)
             ->assertSee('name="_token"', escape: false)
             ->assertSee('name="_method" value="PATCH"', escape: false);
 
         self::assertTrue($response->viewData('buybackRequest')->relationLoaded('quote'));
         self::assertTrue($response->viewData('buybackRequest')->quote->relationLoaded('items'));
         self::assertTrue($response->viewData('buybackRequest')->quote->relationLoaded('program'));
+        self::assertSame(4, substr_count($response->getContent(), 'class="text-right text-reset"'));
+        self::assertSame(2, substr_count($response->getContent(), 'class="col-lg-6 d-flex"'));
+        self::assertSame(3, substr_count($response->getContent(), 'class="d-flex flex-column flex-fill"'));
     }
 
     public function test_requester_collection_and_detail_never_disclose_manager_note(): void

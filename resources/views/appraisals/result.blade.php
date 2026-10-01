@@ -51,12 +51,12 @@
           @foreach($linesByStatus->get('PRICED', collect()) as $line)
             <tr>
               <td>{{ $line->typeName }}</td>
-              <td class="text-right">{{ number_format($line->quantity) }}</td>
+              <td class="text-right text-reset">{{ number_format($line->quantity) }}</td>
               <td>{{ $line->logicalReferenceMode->value }}</td>
-              <td class="text-right">{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($line->referenceUnitPrice) }} ISK</td>
+              <td class="text-right text-reset">{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($line->referenceUnitPrice) }} ISK</td>
               <td>{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::modifier($line->effectiveModifierBps) }}</td>
-              <td class="text-right">{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($line->finalUnitPrice) }} ISK</td>
-              <td class="text-right"><strong>{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($line->lineTotal) }} ISK</strong></td>
+              <td class="text-right text-reset">{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($line->finalUnitPrice) }} ISK</td>
+              <td class="text-right text-reset"><strong>{{ \RandulfTheGrey\Seat\BuybackPrograms\Support\RequesterUi::decimal($line->lineTotal) }} ISK</strong></td>
               <td>
                 <details>
                   <summary class="text-primary">Why this price?</summary>
@@ -157,13 +157,26 @@
               Only payable lines enter the Quote; {{ array_sum($counts) - $counts['PRICED'] }} other outcomes remain appraisal-only.
             </small>
           </p>
-          <form class="buyback-single-submit" method="post" action="{{ route('buyback.quotes.store') }}">
-            @csrf
-            <input type="hidden" name="appraisal_token" value="{{ $appraisalToken }}">
-            <button type="submit" class="btn btn-success">
-              <i class="fas fa-file-invoice-dollar mr-1" aria-hidden="true"></i> Create Quote
-            </button>
-          </form>
+          <p class="mb-3">
+            You can save this Quote and return to it later, or create a Buyback Request now.<br>
+            <strong>Saving a Quote does not submit it for processing.</strong>
+          </p>
+          <div class="d-flex justify-content-end flex-wrap">
+            <form class="buyback-single-submit mr-2 mb-2" method="post" action="{{ route('buyback.quotes.store') }}">
+              @csrf
+              <input type="hidden" name="appraisal_token" value="{{ $appraisalToken }}">
+              <button type="submit" class="btn btn-lg btn-outline-primary">
+                <i class="fas fa-save mr-1" aria-hidden="true"></i> Save Quote
+              </button>
+            </form>
+            <form class="buyback-single-submit mb-2" method="post" action="{{ route('buyback.requests.store-from-appraisal') }}">
+              @csrf
+              <input type="hidden" name="appraisal_token" value="{{ $appraisalToken }}">
+              <button type="submit" class="btn btn-lg btn-success">
+                <i class="fas fa-paper-plane mr-1" aria-hidden="true"></i> Create Buyback Request
+              </button>
+            </form>
+          </div>
         </div>
       @else
         <div class="alert alert-info mb-0" role="status">
@@ -177,8 +190,7 @@
 @push('javascript')
   <script>
     $('.buyback-single-submit').on('submit', function () {
-      $(this).find('button[type=submit]').prop('disabled', true)
-        .prepend('<i class="fas fa-spinner fa-spin mr-1" aria-hidden="true"></i>');
+      $(this).find('button[type=submit]').prop('disabled', true);
     });
   </script>
 @endpush

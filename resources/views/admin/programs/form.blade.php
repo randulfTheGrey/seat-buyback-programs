@@ -193,13 +193,14 @@
         @if($editing)<a class="btn btn-outline-secondary" href="{{ route('buyback.admin.programs.rules.index', $program) }}">Manage Rules</a>@endif
       </div>
       @if($editing && $program->status?->value !== 'ARCHIVED')
-        <button class="btn btn-outline-danger" type="submit" formaction="{{ route('buyback.admin.programs.archive', $program) }}" formmethod="post" onclick="return confirm('This removes the Program from new appraisals. Existing Quotes and Buyback Requests are unaffected.')">Archive Program</button>
+        <button class="btn btn-outline-danger buyback-confirm-submitter" type="submit" formaction="{{ route('buyback.admin.programs.archive', $program) }}" formmethod="post" data-confirm-message="This removes the Program from new appraisals. Existing Quotes and Buyback Requests are unaffected.">Archive Program</button>
       @endif
     </div>
   </form>
 @stop
 
 @push('javascript')
+@include('seat-buyback-programs::partials.confirm-submitter')
 <script>
   (function () {
     var resolution = document.getElementById('split_resolution');

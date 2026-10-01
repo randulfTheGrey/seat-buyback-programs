@@ -103,7 +103,7 @@
     </div>
     <button class="btn btn-primary" type="submit">Save Rule</button>
     <a class="btn btn-outline-secondary" href="{{ route('buyback.admin.programs.rules.index', $program) }}">Cancel</a>
-    @if($editing && !$rule->archived_at)<button class="btn btn-outline-danger float-right" type="submit" formaction="{{ route('buyback.admin.programs.rules.archive', [$program, $rule]) }}" formmethod="post" onclick="return confirm('Archive this rule? It will become inactive.')">Archive Rule</button>@endif
+    @if($editing && !$rule->archived_at)<button class="btn btn-outline-danger float-right buyback-confirm-submitter" type="submit" formaction="{{ route('buyback.admin.programs.rules.archive', [$program, $rule]) }}" formmethod="post" data-confirm-message="Archive this Rule? It will become inactive.">Archive Rule</button>@endif
   </form>
 @stop
 
@@ -125,6 +125,7 @@
 @endpush
 
 @push('javascript')
+@include('seat-buyback-programs::partials.confirm-submitter')
 <script>
   (function ($) {
     var target = $('#target_id');

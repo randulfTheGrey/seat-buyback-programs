@@ -130,7 +130,11 @@ final class AdminUiTest extends TestCase
             ->assertOk()
             ->assertSee('Accept items unless a rule rejects them')
             ->assertSee('Reject items unless a rule accepts them')
-            ->assertSee('Derived midpoint — (BUY + SELL) / 2');
+            ->assertSee('Derived midpoint — (BUY + SELL) / 2')
+            ->assertSee('buyback-confirm-submitter', escape: false)
+            ->assertSee('data-confirm-message="This removes the Program from new appraisals.', escape: false)
+            ->assertSee('bootbox.confirm', escape: false)
+            ->assertDontSee('onclick="return confirm', escape: false);
     }
 
     public function test_program_enablement_blocks_missing_reference_and_allows_non_blocking_warnings(): void
@@ -314,7 +318,11 @@ final class AdminUiTest extends TestCase
         $this->get(route('buyback.admin.programs.rules.edit', [$program, $rule]))
             ->assertOk()
             ->assertSee('percentage points')
-            ->assertSee('Administrator note');
+            ->assertSee('Administrator note')
+            ->assertSee('buyback-confirm-submitter', escape: false)
+            ->assertSee('data-confirm-message="Archive this Rule?', escape: false)
+            ->assertSee('bootbox.confirm', escape: false)
+            ->assertDontSee('onclick="return confirm', escape: false);
     }
 
     public function test_disabled_program_rejects_deterministic_effective_modifier_overflow_on_rule_and_default_saves(): void

@@ -71,7 +71,6 @@ final class ManagerBuybackRequestsDataTable extends DataTable
                 'buyback_requests.status',
                 'buyback_requests.submitted_at',
                 'buyback_requests.eve_contract_id',
-                'buyback_quotes.public_id as quote_public_id',
                 'buyback_quotes.program_id',
                 'buyback_quotes.program_name_snapshot',
                 'buyback_quotes.requester_user_id',
@@ -113,7 +112,7 @@ final class ManagerBuybackRequestsDataTable extends DataTable
     public function getColumns(): array
     {
         return [
-            ['data' => 'public_id', 'name' => 'buyback_requests.public_id', 'title' => 'Request reference'],
+            ['data' => 'public_id', 'name' => 'buyback_requests.public_id', 'title' => 'Buyback Request'],
             ['data' => 'requester_name_snapshot', 'name' => 'buyback_quotes.requester_name_snapshot', 'title' => 'Requester'],
             ['data' => 'program_name_snapshot', 'name' => 'buyback_quotes.program_name_snapshot', 'title' => 'Program'],
             ['data' => 'submitted_at', 'name' => 'buyback_requests.submitted_at', 'title' => 'Submitted'],
